@@ -151,6 +151,23 @@ def test_web_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_db_service_catalog(catalog):
+    assert "db" in catalog.services
+    db = catalog.filter(service="db")
+    assert len(db) >= 5
+    cats = {a.category for a in db}
+    assert {"backdoor", "weak-cred", "misconfig", "privesc", "persistence"} <= cats
+
+
+def test_db_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=7, count=5, services=["db"])
+    subs = [Submission(type="backdoor", service="db",
+                       evidence="rogue user dbsupport with ALL PRIVILEGES")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "db-rogue-admin-user"
+    assert result.scored[0].strength == "strong"
+
+
 def test_report_renders(catalog):
     scenario = generate_scenario(catalog, seed=1337, count=3, services=["ssh"])
     result = grade(scenario, catalog, [])

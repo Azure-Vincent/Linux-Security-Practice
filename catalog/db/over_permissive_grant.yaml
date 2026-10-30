@@ -1,0 +1,38 @@
+id: db-over-permissive-grant
+name: "App account over-granted to ALL PRIVILEGES"
+service: db
+category: misconfig
+difficulty: medium
+points: 110
+description: >
+  The least-privilege application account 'webapp'@'%' has been granted ALL
+  PRIVILEGES on *.* — far beyond the SELECT/INSERT/UPDATE/DELETE on one schema
+  it needs. A web-app compromise now means full database control.
+install:
+  script: plant/over_permissive_grant.sh
+detection:
+  signatures:
+    - type: sql
+      query: "SHOW GRANTS FOR 'webapp'@'%'"
+      match: "ALL PRIVILEGES"
+  accept_evidence:
+    users: ["webapp"]
+    keywords:
+      - webapp
+      - "ALL PRIVILEGES"
+      - "GRANT ALL"
+      - "over-privileged"
+      - "*.*"
+    require: keyword
+remediation: >
+  REVOKE ALL PRIVILEGES, GRANT OPTION FROM 'webapp'@'%'; then grant back only
+  what the app needs on its own schema (e.g. SELECT, INSERT, UPDATE, DELETE on
+  acme.*). Review grants for every application account.
+hunt_commands:
+  - "SHOW GRANTS FOR 'webapp'@'%';"
+  - "SELECT * FROM information_schema.user_privileges WHERE grantee LIKE \"'webapp'%\";"
+learn: >
+  Applications are routinely granted far more than they use, so any SQL
+  injection or credential leak escalates straight to full DB control. Review
+  grants against least privilege; an app user should rarely have *.* or admin
+  privileges.

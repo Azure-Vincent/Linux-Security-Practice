@@ -37,6 +37,17 @@ services:
     depends_on: [sink]
     restart: unless-stopped
 
+  db:
+    build: ./services/db
+    container_name: beaconhunt-db
+    networks: [range, edge]     # range: reach the sink · edge: publish the port
+    environment:
+      MARIADB_ROOT_PASSWORD: beaconhunt-root   # training admin password
+    ports:
+      - "127.0.0.1:3306:3306"   # loopback only — not exposed to the LAN
+    depends_on: [sink]
+    restart: unless-stopped
+
 networks:
   range:
     name: beaconhunt-range

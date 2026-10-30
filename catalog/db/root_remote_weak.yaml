@@ -1,0 +1,36 @@
+id: db-root-remote-weak
+name: "root reachable from any host with a weak password"
+service: db
+category: weak-cred
+difficulty: easy
+points: 90
+description: >
+  A 'root'@'%' account exists with the weak password 'toor', allowing remote
+  superuser login from anywhere — not just localhost.
+install:
+  script: plant/root_remote_weak.sh
+detection:
+  signatures:
+    - type: sql
+      query: "SELECT User, Host FROM mysql.user WHERE User='root' AND Host='%'"
+      match: "root"
+  accept_evidence:
+    users: ["root"]
+    keywords:
+      - "root@%"
+      - "root'@'%"
+      - "weak password"
+      - toor
+      - "remote root"
+    require: keyword
+remediation: >
+  DROP USER 'root'@'%' so root is only reachable over the local socket. If a
+  remote admin is truly needed, use a dedicated named account with a strong
+  password and least privilege. Enforce a password policy.
+hunt_commands:
+  - "SELECT User, Host FROM mysql.user WHERE User='root';"
+  - "SELECT User,Host FROM mysql.user WHERE Host NOT IN ('localhost','127.0.0.1','::1');"
+learn: >
+  'root'@'%' turns a database into an internet-facing superuser login; a weak
+  password then makes it trivial. Root should be local-socket only. Hunt for
+  admin accounts whose Host is '%' or a wildcard.

@@ -1,0 +1,38 @@
+id: db-trigger-persistence
+name: "Persistence via a database trigger"
+service: db
+category: persistence
+difficulty: hard
+points: 150
+description: >
+  A trigger 'beaconhunt_persist' fires on every insert into acme.orders. The
+  declawed version writes a marker row to a shadow table; a real one re-seeds
+  attacker data so cleanup alone doesn't evict them.
+install:
+  script: plant/trigger_persistence.sh
+detection:
+  signatures:
+    - type: sql
+      query: "SELECT trigger_name, action_statement FROM information_schema.triggers"
+      match: "beaconhunt_persist"
+  accept_evidence:
+    keywords:
+      - trigger
+      - beaconhunt_persist
+      - "information_schema.triggers"
+      - audit_shadow
+      - persistence
+    require: keyword
+remediation: >
+  DROP TRIGGER acme.beaconhunt_persist and remove any rows/tables it maintained
+  (audit_shadow). Enumerate all triggers, routines, and events, and baseline
+  them — persistence often hides in stored objects, not files.
+hunt_commands:
+  - "SELECT trigger_name, event_object_table, action_statement FROM information_schema.triggers;"
+  - "SELECT routine_name, routine_type FROM information_schema.routines;"
+  - "SELECT event_name FROM information_schema.events;"
+learn: >
+  Triggers, stored procedures, and scheduled events run inside the database and
+  survive application redeploys, making them quiet persistence. MySQL triggers
+  can't run DDL/GRANT, so attackers use them to re-insert rows or flip flags.
+  Baseline information_schema.triggers/routines/events.

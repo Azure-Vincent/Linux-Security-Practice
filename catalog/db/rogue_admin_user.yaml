@@ -1,0 +1,38 @@
+id: db-rogue-admin-user
+name: "Rogue database superuser"
+service: db
+category: backdoor
+difficulty: medium
+points: 130
+description: >
+  An attacker-created account 'dbsupport'@'%' holds ALL PRIVILEGES WITH GRANT
+  OPTION from any host — a full database backdoor that also lets the attacker
+  hand out access to others.
+install:
+  script: plant/rogue_admin.sh
+detection:
+  signatures:
+    - type: sql
+      query: "SELECT User, Host FROM mysql.user WHERE User='dbsupport'"
+      match: "dbsupport"
+  accept_evidence:
+    users: ["dbsupport"]
+    keywords:
+      - dbsupport
+      - "ALL PRIVILEGES"
+      - "WITH GRANT OPTION"
+      - "mysql.user"
+      - superuser
+    require: keyword
+remediation: >
+  DROP USER 'dbsupport'@'%'; then review mysql.user for any other unexpected
+  accounts and audit who can GRANT. Restrict admin accounts to localhost and
+  rotate credentials.
+hunt_commands:
+  - "SELECT User, Host FROM mysql.user;"
+  - "SHOW GRANTS FOR 'dbsupport'@'%';"
+  - "SELECT User,Host FROM mysql.user WHERE Super_priv='Y' OR Grant_priv='Y';"
+learn: >
+  Creating a privileged account is a durable DB backdoor: it survives app
+  patches and often hides among service accounts. Baseline mysql.user and alert
+  on new accounts, accounts reachable from '%', and anyone with GRANT OPTION.

@@ -1,0 +1,38 @@
+id: db-file-privilege
+name: "User with FILE privilege (server file read/write)"
+service: db
+category: privesc
+difficulty: hard
+points: 150
+description: >
+  The account 'report'@'%' was granted the FILE privilege, letting it read
+  server files (LOAD_FILE) and write them (SELECT ... INTO OUTFILE) — a classic
+  path from DB access to host compromise.
+install:
+  script: plant/file_privilege.sh
+detection:
+  signatures:
+    - type: sql
+      query: "SELECT User,Host FROM mysql.user WHERE File_priv='Y' AND User<>'root'"
+      match: "report"
+  accept_evidence:
+    users: ["report"]
+    keywords:
+      - report
+      - "FILE privilege"
+      - File_priv
+      - LOAD_FILE
+      - "INTO OUTFILE"
+    require: keyword
+remediation: >
+  REVOKE FILE ON *.* FROM 'report'@'%'. The FILE privilege is global-only and
+  almost never needed by applications; remove it everywhere except trusted admin
+  tooling, and set secure_file_priv to constrain any legitimate use.
+hunt_commands:
+  - "SELECT User,Host FROM mysql.user WHERE File_priv='Y';"
+  - "SHOW GRANTS FOR 'report'@'%';"
+  - "SHOW VARIABLES LIKE 'secure_file_priv';"
+learn: >
+  FILE lets a database account read and write files as the DB server user —
+  enough to steal /etc/passwd, drop a web shell into the webroot, or stage a UDF
+  for code execution. Audit who holds FILE; it should be almost no one.

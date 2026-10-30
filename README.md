@@ -55,9 +55,11 @@ beaconhunt/
 ├── build_windows_exe.bat       # builds dist\BeaconHunt.exe (run on Windows)
 ├── catalog/ssh/*.yaml          # planted-artifact definitions (the extensible catalog)
 ├── catalog/web/*.yaml          # web-server findings
+├── catalog/db/*.yaml           # database findings
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
 │   ├── web/                    # hardened Apache+PHP target + declawed plant scripts
+│   ├── db/                     # hardened MariaDB target + declawed SQL plant scripts
 │   └── sink/                   # local beacon sink (stands in for C2)
 ├── state/                      # scenarios, round state, scoreboard (git-ignored)
 └── tests/                      # offline engine tests (no Docker needed)
@@ -306,10 +308,19 @@ python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, r
 
 ### Status
 
-SSH and the web server (Apache+PHP) are implemented end-to-end (plant → hunt →
-grade → report → scoreboard → learn), 10 findings total. DB / SMB / host-level
-catalogs follow the same pattern and are the next services to fill in.
+SSH, the web server (Apache+PHP), and the database (MariaDB) are implemented
+end-to-end (plant → hunt → grade → report → scoreboard → learn), 15 findings
+total. SMB / host-level catalogs follow the same pattern and are next.
 
-The web target is published on `127.0.0.1:8080`. It has no SSH; hunt it with a
-root shell via `docker compose -p beaconhunt exec web bash` (or `sudo` as
-`defender` inside the container) and in the browser at http://127.0.0.1:8080.
+Targets and how to hunt them:
+
+| Service | Port | Get in to hunt / remediate |
+|---------|------|-----------------------------|
+| ssh | `127.0.0.1:2222` | `ssh defender@127.0.0.1 -p 2222` (sudo), or `docker compose -p beaconhunt exec ssh bash` |
+| web | `127.0.0.1:8080` | browser, or `docker compose -p beaconhunt exec web bash` (root) |
+| db  | `127.0.0.1:3306` | `docker compose -p beaconhunt exec db mariadb -uroot -pbeaconhunt-root` |
+
+The DB findings are hunted with SQL — e.g. `SELECT User,Host FROM mysql.user;`,
+`SHOW GRANTS FOR 'webapp'@'%';`, `SELECT trigger_name, action_statement FROM
+information_schema.triggers;`. Submit the user/grant/trigger as your evidence
+(e.g. `--service db --type backdoor --evidence "rogue user dbsupport"`).
