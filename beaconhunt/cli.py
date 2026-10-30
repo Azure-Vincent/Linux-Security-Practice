@@ -22,6 +22,7 @@ from pathlib import Path
 from . import __version__, learning, report, safety, scoreboard
 from .catalog import DEFAULT_CATALOG_DIR, load_catalog
 from .grader import Submission, grade
+from .hints import choose_hint
 from .scenario import (
     STATE_DIR,
     current_seed,
@@ -151,34 +152,15 @@ def cmd_hint(args) -> int:
     scenario = load_scenario(seed, args.state_dir)
     state = load_round(seed, args.state_dir)
 
-    # Choose an as-yet-unhinted finding, optionally filtered by service.
-    candidates = [
-        f for f in scenario.findings
-        if (not args.service or f.service == args.service)
-    ]
-    candidates.sort(key=lambda f: state.hints_used.get(f.artifact_id, 0))
-    if not candidates:
+    hint = choose_hint(cat, scenario, state, service=args.service)
+    if hint is None:
         print("No findings match that filter.")
         return 0
-    target = candidates[0]
-    art = cat.get(target.artifact_id)
-    n = state.hints_used.get(art.id, 0)
-
-    tiers = [
-        f"There is a {art.category} finding in the {art.service} service "
-        f"({art.difficulty}).",
-        (f"Technique: {art.learn.strip()}" if art.learn
-         else f"Look for: {art.description}"),
-        (f"Try: {art.hunt_commands[0]}" if art.hunt_commands
-         else f"Check: {art.description}"),
-    ]
-    tier = min(n, len(tiers) - 1)
-    state.hints_used[art.id] = n + 1
+    state.hints_used[hint["artifact_id"]] = hint["n"] + 1
     save_round(state, args.state_dir)
-    cost = int(art.points * 0.25)
-    print(f"[hint {n + 1} for a {art.service}/{art.category} finding, "
-          f"costs ~{cost} pts]")
-    print(f"  {tiers[tier]}")
+    print(f"[hint {hint['n'] + 1} for a {hint['service']}/{hint['category']} "
+          f"finding, costs ~{hint['cost']} pts]")
+    print(f"  {hint['text']}")
     return 0
 
 
@@ -240,6 +222,11 @@ def cmd_scoreboard(args) -> int:
     best = max(entries, key=lambda e: e.final_points)
     print(f"\nBest: {best.final_points} pts (seed {best.seed}).")
     return 0
+
+
+def cmd_web(args) -> int:
+    from . import webui
+    return webui.serve(args.catalog, args.state_dir, port=args.port)
 
 
 def cmd_teardown(args) -> int:
@@ -319,6 +306,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("scoreboard", help="show round history")
     sp.set_defaults(func=cmd_scoreboard)
+
+    sp = sub.add_parser("web", help="launch the local submission web UI (127.0.0.1)")
+    sp.add_argument("--port", type=int, default=8800)
+    sp.set_defaults(func=cmd_web)
 
     sp = sub.add_parser("teardown", help="tear the range down")
     sp.set_defaults(func=cmd_teardown)

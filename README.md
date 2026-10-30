@@ -45,6 +45,8 @@ beaconhunt/
 │   ├── scoreboard.py           # persistent history across rounds
 │   ├── report.py               # end-of-round report
 │   ├── learning.py             # explainers + service-by-service walkthrough
+│   ├── hints.py                # shared tiered-hint logic (CLI + web UI)
+│   ├── webui.py                # local submission web UI (127.0.0.1, stdlib only)
 │   └── cli.py                  # the `beaconhunt` command
 ├── catalog/ssh/*.yaml          # planted-artifact definitions (the extensible catalog)
 ├── services/
@@ -115,6 +117,21 @@ beaconhunt submit --type misconfig --service ssh \
 beaconhunt hint  --service ssh     # stuck? a tiered hint (costs points)
 beaconhunt grade                   # score + report + record to the scoreboard
 ```
+
+### Submission web UI
+
+Prefer a browser? Launch the local submission GUI (stdlib only, no extra
+dependencies). It drives the same engine and state as the CLI:
+
+```bash
+beaconhunt web            # serves http://127.0.0.1:8800
+beaconhunt web --port 9000
+```
+
+It is bound to `127.0.0.1` only (localhost scope), so it is never reachable
+from the LAN. From the page you can generate a round, submit findings, take
+hints, grade, and watch the scoreboard — and submissions you make in the CLI
+and the UI share the same round state.
 
 Example report (abridged):
 
