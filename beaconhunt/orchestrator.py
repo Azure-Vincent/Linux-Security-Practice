@@ -161,9 +161,14 @@ def wait_for_ssh(log: OnLine, timeout: float = 60.0) -> bool:
 
 
 def open_ssh_terminal(log: OnLine, user: str = DEFENDER_USER) -> None:
-    ssh = f"ssh {user}@{SSH_HOST} -p {SSH_PORT}"
     system = platform.system()
-    log(f"Opening a terminal: {ssh}")
+    # This is a disposable localhost training container whose host keys change
+    # on every rebuild, so pinning them only causes known_hosts collisions.
+    # Skip known_hosts for this target (it is 127.0.0.1, never a real host).
+    null_dev = "NUL" if system == "Windows" else "/dev/null"
+    ssh = (f"ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile={null_dev} "
+           f"{user}@{SSH_HOST} -p {SSH_PORT}")
+    log(f"Opening a terminal: ssh {user}@{SSH_HOST} -p {SSH_PORT}")
     try:
         if system == "Windows":
             hint = f"echo BeaconHunt {user} login ^(password: defender^) & {ssh}"

@@ -182,6 +182,19 @@ The `defender` account is part of the base image — it is **not** a planted
 finding and is never graded. Change its password at build time with
 `--build-arg DEFENDER_PASSWORD=…`.
 
+> **"REMOTE HOST IDENTIFICATION HAS CHANGED" on reconnect?** Each rebuild
+> regenerates the container's SSH host keys, so `[127.0.0.1]:2222` gets a new
+> fingerprint and clashes with your saved `known_hosts`. Clear the stale entry:
+> ```bash
+> ssh-keygen -R "[127.0.0.1]:2222"
+> ```
+> The launcher's auto-opened terminal already skips `known_hosts` for this
+> disposable localhost target, so it never hits this. To do the same manually:
+> ```bash
+> ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null \
+>     defender@127.0.0.1 -p 2222     # use NUL instead of /dev/null on Windows
+> ```
+
 Now hunt inside the range, then submit:
 
 ```bash
