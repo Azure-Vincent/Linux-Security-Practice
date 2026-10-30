@@ -47,7 +47,12 @@ beaconhunt/
 │   ├── learning.py             # explainers + service-by-service walkthrough
 │   ├── hints.py                # shared tiered-hint logic (CLI + web UI)
 │   ├── webui.py                # local submission web UI (127.0.0.1, stdlib only)
+│   ├── orchestrator.py         # headless launch sequence (generate→deploy→ssh→web)
+│   ├── launcher.py             # Tkinter launcher GUI
 │   └── cli.py                  # the `beaconhunt` command
+├── beaconhunt_gui.py           # launcher entry point (what the .exe is built from)
+├── BeaconHunt.bat              # double-click launcher (needs Python)
+├── build_windows_exe.bat       # builds dist\BeaconHunt.exe (run on Windows)
 ├── catalog/ssh/*.yaml          # planted-artifact definitions (the extensible catalog)
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
@@ -99,7 +104,56 @@ You can also run it without installing, as `python3 -m beaconhunt.cli …`.
 Standing up the live range additionally needs **Docker** with the Compose
 plugin. All scenario/grading/learning commands work offline without Docker.
 
-## Run a round
+## Quick start — the launcher (GUI / executable)
+
+The easiest way to run everything is the desktop launcher. You pick a seed and
+services, click **Launch**, and BeaconHunt will: generate the scenario → build
+and start the range + plant the findings → open a terminal **already SSH'd in
+as `defender`** → start the submission web UI and open it in your browser.
+
+**Requirements:** Docker Desktop installed and running. (Python 3.10+ if you
+run the `.bat`; the built `.exe` is standalone but still drives Docker Desktop.)
+
+Three ways to launch it, pick one:
+
+```text
+1. Double-click  BeaconHunt.bat            (needs Python installed)
+2. beaconhunt-gui                          (after `pip install -e .`)
+3. Build a standalone exe, then run it:
+       build_windows_exe.bat   ->   dist\BeaconHunt.exe   (double-click)
+```
+
+> The prebuilt `.exe` has to be produced **on Windows** (PyInstaller can't
+> cross-compile), which is exactly what `build_windows_exe.bat` does — it
+> bundles the catalog, services, and compose file into one `dist\BeaconHunt.exe`.
+
+The launcher window:
+
+```text
+ 🛰  BeaconHunt Launcher
+ ┌─ Scenario ──────────────────────────────────────────────┐
+ │ Seed (blank = random) [____]   Findings (count) [ 5 ]    │
+ │ Difficulty [ any ▾ ]                                     │
+ │ Services   ☑ ssh  ☐ web  ☐ db  ☐ smb  ☐ host            │
+ └──────────────────────────────────────────────────────────┘
+ ┌─ Submission web UI ─────────────────────────────────────┐
+ │ Port [8800]   Username [hunter]                          │
+ │ Password (blank = random) [••••]  ☑ Open SSH terminal    │
+ │                                   ☑ Open browser         │
+ └──────────────────────────────────────────────────────────┘
+   [ 🚀 Launch Range ]  [ Tear down ]   Idle.
+ ┌─ log ───────────────────────────────────────────────────┐
+ │ Scenario seed=1337: 4 finding(s), 430 pts.               │
+ │ $ docker compose ... up -d --build                       │
+ │ sshd is up.  Opening terminal: ssh defender@127.0.0.1 …  │
+ │ Web UI on http://127.0.0.1:8800 (user: hunter · …)       │
+ └──────────────────────────────────────────────────────────┘
+```
+
+Everything the launcher does is also available as the individual CLI commands
+below.
+
+## Run a round (CLI)
 
 ```bash
 beaconhunt generate --seed 1337 --count 4 --service ssh   # pick findings (seedable)

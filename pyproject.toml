@@ -12,9 +12,13 @@ dependencies = ["PyYAML>=6.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+build = ["pyinstaller>=6.0"]
 
 [project.scripts]
 beaconhunt = "beaconhunt.cli:main"
+
+[project.gui-scripts]
+beaconhunt-gui = "beaconhunt.launcher:main"
 
 [tool.setuptools]
 packages = ["beaconhunt"]

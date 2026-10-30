@@ -4,6 +4,7 @@ __pycache__/
 *.egg-info/
 build/
 dist/
+*.spec
 
 # Round state (scenarios, submissions, scoreboard) is local to a user.
 state/*.json
