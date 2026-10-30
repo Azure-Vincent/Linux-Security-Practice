@@ -133,6 +133,39 @@ from the LAN. From the page you can generate a round, submit findings, take
 hints, grade, and watch the scoreboard — and submissions you make in the CLI
 and the UI share the same round state.
 
+#### Signing in
+
+The web UI requires a login (random session cookie, `HttpOnly` + `SameSite`,
+constant-time password check). You never commit a password — supply one or let
+BeaconHunt generate it:
+
+```bash
+beaconhunt web                                   # random password, printed at startup
+beaconhunt web --user vincent --password hunt42  # pick your own
+BEACONHUNT_WEB_PASSWORD=hunt42 beaconhunt web    # or via env var
+beaconhunt web --no-auth                         # disable login (localhost only)
+```
+
+| Field    | Value |
+|----------|-------|
+| Address  | `http://127.0.0.1:8800` (loopback only — change the port with `--port`) |
+| Username | `hunter` by default, or whatever you pass to `--user` |
+| Password | what you pass to `--password` / `$BEACONHUNT_WEB_PASSWORD`, else a random one **printed in the terminal** when the server starts |
+
+The server prints the exact address, username, and password on startup:
+
+```
+========================================================
+  BeaconHunt web UI   http://127.0.0.1:8800
+  Address : 127.0.0.1  (localhost only — not on the LAN)
+  Username: hunter
+  Password: q51XMH3i1cgl   (generated for this run)
+========================================================
+```
+
+Open that URL, sign in, and use the **sign out** link (top-right) when done.
+Sessions are in-memory, so restarting the server signs everyone out.
+
 Example report (abridged):
 
 ```

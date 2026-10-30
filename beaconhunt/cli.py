@@ -226,7 +226,10 @@ def cmd_scoreboard(args) -> int:
 
 def cmd_web(args) -> int:
     from . import webui
-    return webui.serve(args.catalog, args.state_dir, port=args.port)
+    return webui.serve(
+        args.catalog, args.state_dir, port=args.port,
+        user=args.user, password=args.password, auth=not args.no_auth,
+    )
 
 
 def cmd_teardown(args) -> int:
@@ -309,6 +312,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     sp = sub.add_parser("web", help="launch the local submission web UI (127.0.0.1)")
     sp.add_argument("--port", type=int, default=8800)
+    sp.add_argument("--user", default="hunter", help="sign-in username (default: hunter)")
+    sp.add_argument("--password", default=None,
+                    help="sign-in password (default: $BEACONHUNT_WEB_PASSWORD or a "
+                         "random one printed at startup)")
+    sp.add_argument("--no-auth", action="store_true",
+                    help="disable the login (localhost only; not recommended)")
     sp.set_defaults(func=cmd_web)
 
     sp = sub.add_parser("teardown", help="tear the range down")
