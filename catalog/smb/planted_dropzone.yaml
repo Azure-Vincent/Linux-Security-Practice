@@ -1,0 +1,39 @@
+id: smb-planted-dropzone
+name: "Malicious script in a writable share"
+service: smb
+category: backdoor
+difficulty: medium
+points: 120
+description: >
+  A script (update.sh) was dropped into the writable share. It carries the
+  shape of a staged payload; this training copy is neutered but matches what a
+  hunter looks for in an anonymous drop zone.
+install:
+  script: plant/planted_dropzone.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /srv/public/update.sh
+      match: "beaconhunt-smb-payload"
+  accept_evidence:
+    paths:
+      - /srv/public/update.sh
+      - /srv/public
+    keywords:
+      - update.sh
+      - payload
+      - "/srv/public"
+      - dropzone
+    require: any
+remediation: >
+  Delete the dropped script and review who had write access and when it
+  appeared. Remove write/guest access to the share, and treat the host as
+  suspect if anything may have executed it (e.g. via root preexec).
+hunt_commands:
+  - "ls -la /srv/public"
+  - "find /srv -type f -newermt '-7 days' -ls"
+  - "grep -RilE 'curl|wget|bash -i|/dev/tcp' /srv"
+learn: >
+  Writable shares become malware drop zones: an attacker uploads a script and
+  then triggers it (a logon script, a scheduled task, or a Samba root preexec).
+  Baseline share contents and alert on new executables under share paths.

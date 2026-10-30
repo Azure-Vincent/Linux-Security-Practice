@@ -1,0 +1,40 @@
+id: smb-guest-writable-share
+name: "Anonymous, world-writable SMB share"
+service: smb
+category: misconfig
+difficulty: easy
+points: 90
+description: >
+  A [public] share allows guest (anonymous) access and is writable, backed by a
+  world-writable path with 'force user = root'. Anyone on the network can read
+  and drop files, which run with root ownership.
+install:
+  script: plant/guest_writable_share.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/samba/smb.conf
+      match: "beaconhunt-public"
+  accept_evidence:
+    paths:
+      - /etc/samba/smb.conf
+      - /srv/public
+    keywords:
+      - "guest ok"
+      - writable
+      - "public"
+      - smb.conf
+      - "force user"
+    require: any
+remediation: >
+  Remove the [public] share (or set 'guest ok = no', 'writable = no', and drop
+  'force user'). Keep 'map to guest = never' globally, and tighten filesystem
+  permissions on any share path. Re-check with 'testparm -s'.
+hunt_commands:
+  - "testparm -s 2>/dev/null"
+  - "grep -nE 'guest ok|writable|read only|force user' /etc/samba/smb.conf"
+  - "smbclient -L //127.0.0.1 -N"
+learn: >
+  Anonymous, writable shares are a top SMB finding: they let an attacker browse
+  sensitive files or drop payloads with no credentials. Audit the effective
+  config with testparm and remove guest/writable access to anything sensitive.

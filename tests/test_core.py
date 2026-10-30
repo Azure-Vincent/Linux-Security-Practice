@@ -168,6 +168,23 @@ def test_db_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_smb_service_catalog(catalog):
+    assert "smb" in catalog.services
+    smb = catalog.filter(service="smb")
+    assert len(smb) >= 5
+    cats = {a.category for a in smb}
+    assert {"misconfig", "backdoor", "weak-cred", "persistence", "beacon"} <= cats
+
+
+def test_smb_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=5, count=5, services=["smb"])
+    subs = [Submission(type="backdoor", service="smb",
+                       evidence="/srv/public/update.sh")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "smb-planted-dropzone"
+    assert result.scored[0].strength == "strong"
+
+
 def test_report_renders(catalog):
     scenario = generate_scenario(catalog, seed=1337, count=3, services=["ssh"])
     result = grade(scenario, catalog, [])

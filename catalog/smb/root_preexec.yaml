@@ -1,0 +1,42 @@
+id: smb-root-preexec
+name: "Share runs a script as root on connect (root preexec)"
+service: smb
+category: persistence
+difficulty: hard
+points: 150
+description: >
+  A [backup] share uses 'root preexec' to run /etc/samba/scripts/onconnect.sh
+  as root every time a client connects — a durable Samba backdoor. The training
+  script only logs a marker, but the config is the real detectable condition.
+install:
+  script: plant/root_preexec.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/samba/smb.conf
+      match: "root preexec"
+    - type: file_line
+      path: /etc/samba/scripts/onconnect.sh
+      match: "beaconhunt-preexec"
+  accept_evidence:
+    paths:
+      - /etc/samba/smb.conf
+      - /etc/samba/scripts/onconnect.sh
+    keywords:
+      - "root preexec"
+      - preexec
+      - onconnect
+      - "runs as root"
+    require: any
+remediation: >
+  Remove the 'root preexec' (and 'preexec'/'postexec') directives and the
+  referenced script. There is almost never a legitimate reason to run arbitrary
+  commands as root on share connect. Audit smb.conf for all *exec directives.
+hunt_commands:
+  - "grep -niE 'preexec|postexec|root preexec' /etc/samba/smb.conf"
+  - "testparm -s 2>/dev/null | grep -i exec"
+  - "ls -la /etc/samba/scripts"
+learn: >
+  Samba's 'root preexec' runs a command as root whenever a client connects to
+  the share — an elegant persistence and privilege hook. It is rarely used
+  legitimately, so any *exec directive in smb.conf deserves scrutiny.

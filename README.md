@@ -56,10 +56,12 @@ beaconhunt/
 ├── catalog/ssh/*.yaml          # planted-artifact definitions (the extensible catalog)
 ├── catalog/web/*.yaml          # web-server findings
 ├── catalog/db/*.yaml           # database findings
+├── catalog/smb/*.yaml          # Samba/SMB findings
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
 │   ├── web/                    # hardened Apache+PHP target + declawed plant scripts
 │   ├── db/                     # hardened MariaDB target + declawed SQL plant scripts
+│   ├── smb/                    # hardened Samba target + declawed plant scripts
 │   └── sink/                   # local beacon sink (stands in for C2)
 ├── state/                      # scenarios, round state, scoreboard (git-ignored)
 └── tests/                      # offline engine tests (no Docker needed)
@@ -308,9 +310,9 @@ python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, r
 
 ### Status
 
-SSH, the web server (Apache+PHP), and the database (MariaDB) are implemented
-end-to-end (plant → hunt → grade → report → scoreboard → learn), 15 findings
-total. SMB / host-level catalogs follow the same pattern and are next.
+SSH, the web server (Apache+PHP), the database (MariaDB), and SMB (Samba) are
+implemented end-to-end (plant → hunt → grade → report → scoreboard → learn),
+20 findings total. Host-level artifacts follow the same pattern and are next.
 
 Targets and how to hunt them:
 
@@ -319,6 +321,7 @@ Targets and how to hunt them:
 | ssh | `127.0.0.1:2222` | `ssh defender@127.0.0.1 -p 2222` (sudo), or `docker compose -p beaconhunt exec ssh bash` |
 | web | `127.0.0.1:8080` | browser, or `docker compose -p beaconhunt exec web bash` (root) |
 | db  | `127.0.0.1:3306` | `docker compose -p beaconhunt exec db mariadb -uroot -pbeaconhunt-root` |
+| smb | `127.0.0.1:445`  | `docker compose -p beaconhunt exec smb bash` (root); enumerate with `testparm -s`, `smbclient -L //127.0.0.1 -N`, `pdbedit -L` |
 
 The DB findings are hunted with SQL — e.g. `SELECT User,Host FROM mysql.user;`,
 `SHOW GRANTS FOR 'webapp'@'%';`, `SELECT trigger_name, action_statement FROM

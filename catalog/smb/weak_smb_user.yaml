@@ -1,0 +1,37 @@
+id: smb-weak-smb-user
+name: "Samba account with a weak password"
+service: smb
+category: weak-cred
+difficulty: easy
+points: 90
+description: >
+  A Samba user 'share' was created with a weak, guessable password, usable to
+  authenticate to shares over SMB.
+install:
+  script: plant/weak_smb_user.sh
+detection:
+  signatures:
+    - type: user
+      path: /etc/passwd
+      match: "share"
+  accept_evidence:
+    users: ["share"]
+    keywords:
+      - "share"
+      - smbpasswd
+      - "pdbedit"
+      - "weak password"
+      - "samba user"
+    require: keyword
+remediation: >
+  Disable or remove the Samba account (`smbpasswd -x share` / `pdbedit -x
+  share`) and the unix user if unneeded. Enforce strong passwords for any SMB
+  accounts and prefer AD-backed auth where possible.
+hunt_commands:
+  - "sudo pdbedit -L -v"
+  - "sudo pdbedit -L"
+  - "getent passwd share"
+learn: >
+  Samba keeps its own password database (pdbedit / smbpasswd), separate from
+  /etc/shadow, so weak SMB accounts hide from a /etc/shadow review. Enumerate
+  SMB users with pdbedit and check for weak or shared credentials.
