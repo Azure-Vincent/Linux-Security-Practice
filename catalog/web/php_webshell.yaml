@@ -1,0 +1,46 @@
+id: web-php-webshell
+name: "PHP web shell in uploads"
+service: web
+category: backdoor
+difficulty: medium
+points: 130
+description: >
+  An attacker-uploaded PHP file sits in the web-accessible uploads directory. It
+  has the shape of a classic command web shell (a $_GET['cmd'] handler), though
+  this training copy's execution is neutered.
+
+install:
+  script: plant/php_webshell.sh
+
+detection:
+  signatures:
+    - type: file_line
+      path: /var/www/html/uploads/up_8842.php
+      match: "beaconhunt-webshell"
+  accept_evidence:
+    paths:
+      - /var/www/html/uploads/up_8842.php
+      - /var/www/html/uploads
+    keywords:
+      - webshell
+      - "web shell"
+      - "system("
+      - "$_GET"
+      - uploads
+    require: any
+
+remediation: >
+  Delete the uploaded file, then stop PHP from executing in upload directories
+  (serve them static, or set 'php_admin_flag engine off'). Review the access
+  logs for requests to it, and treat anything it may have run as compromised.
+
+hunt_commands:
+  - "grep -RilE 'eval\\(|system\\(|passthru\\(|base64_decode|shell_exec' /var/www"
+  - "find /var/www -name '*.php' -newermt '-7 days' -ls"
+  - "ls -la /var/www/html/uploads"
+
+learn: >
+  A web shell is a script dropped into the webroot that runs attacker commands
+  through the web server's user. Uploads directories that both accept files and
+  execute PHP are the classic vector. Hunt for unexpected or recently-modified
+  scripts and for dangerous PHP functions in the webroot.

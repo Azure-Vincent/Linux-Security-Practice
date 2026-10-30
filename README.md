@@ -54,8 +54,10 @@ beaconhunt/
 ├── BeaconHunt.bat              # double-click launcher (needs Python)
 ├── build_windows_exe.bat       # builds dist\BeaconHunt.exe (run on Windows)
 ├── catalog/ssh/*.yaml          # planted-artifact definitions (the extensible catalog)
+├── catalog/web/*.yaml          # web-server findings
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
+│   ├── web/                    # hardened Apache+PHP target + declawed plant scripts
 │   └── sink/                   # local beacon sink (stands in for C2)
 ├── state/                      # scenarios, round state, scoreboard (git-ignored)
 └── tests/                      # offline engine tests (no Docker needed)
@@ -304,6 +306,10 @@ python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, r
 
 ### Status
 
-SSH is implemented end-to-end as a vertical slice (plant → hunt → grade →
-report → scoreboard → learn). Web / DB / SMB / host-level catalogs follow the
-same pattern and are the next services to fill in.
+SSH and the web server (Apache+PHP) are implemented end-to-end (plant → hunt →
+grade → report → scoreboard → learn), 10 findings total. DB / SMB / host-level
+catalogs follow the same pattern and are the next services to fill in.
+
+The web target is published on `127.0.0.1:8080`. It has no SSH; hunt it with a
+root shell via `docker compose -p beaconhunt exec web bash` (or `sudo` as
+`defender` inside the container) and in the browser at http://127.0.0.1:8080.

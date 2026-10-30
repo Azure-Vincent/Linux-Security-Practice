@@ -28,6 +28,15 @@ services:
     depends_on: [sink]
     restart: unless-stopped
 
+  web:
+    build: ./services/web
+    container_name: beaconhunt-web
+    networks: [range, edge]     # range: reach the sink · edge: publish the port
+    ports:
+      - "127.0.0.1:8080:80"     # loopback only — not exposed to the LAN
+    depends_on: [sink]
+    restart: unless-stopped
+
 networks:
   range:
     name: beaconhunt-range

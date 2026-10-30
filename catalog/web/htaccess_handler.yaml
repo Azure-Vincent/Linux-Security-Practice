@@ -1,0 +1,45 @@
+id: web-htaccess-handler
+name: ".htaccess maps images to the PHP handler"
+service: web
+category: misconfig
+difficulty: medium
+points: 110
+description: >
+  A .htaccess override in the uploads directory adds the PHP handler to image
+  extensions, so a .jpg/.png can be executed as PHP — a common upload-filter
+  bypass used to turn a benign file upload into code execution.
+
+install:
+  script: plant/htaccess_handler.sh
+
+detection:
+  signatures:
+    - type: config
+      path: /var/www/html/uploads/.htaccess
+      match: "x-httpd-php"
+  accept_evidence:
+    paths:
+      - /var/www/html/uploads/.htaccess
+      - /var/www/html/uploads
+    keywords:
+      - htaccess
+      - AddType
+      - AddHandler
+      - x-httpd-php
+    require: any
+
+remediation: >
+  Remove the rogue .htaccess. Set 'AllowOverride None' for the webroot so
+  per-directory overrides are ignored, and never allow handler/type directives
+  in writable upload paths. Reload Apache after changing config.
+
+hunt_commands:
+  - "find /var/www -name .htaccess -exec sh -c 'echo ==> $1; cat \"$1\"' _ {} \\;"
+  - "grep -R -nE 'x-httpd-php|AddHandler|AddType' /var/www"
+  - "apachectl -S 2>/dev/null; grep -ri allowoverride /etc/apache2"
+
+learn: >
+  Apache reads .htaccess files per-directory when AllowOverride permits it. An
+  attacker who can write one can re-map file types to the PHP interpreter,
+  defeating 'only images allowed' upload checks. Audit every .htaccess,
+  especially under upload directories, and disable overrides where you can.

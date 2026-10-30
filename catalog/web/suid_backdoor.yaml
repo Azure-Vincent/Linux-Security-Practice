@@ -1,0 +1,46 @@
+id: web-suid-backdoor
+name: "Unexpected SUID-root binary"
+service: web
+category: privesc
+difficulty: hard
+points: 150
+description: >
+  A SUID-root binary (/usr/local/bin/sysdiag) was planted so a low-privilege
+  web user could escalate to root. The training copy is a neutered /bin/true,
+  but it is detectable exactly like a real SUID backdoor.
+
+install:
+  script: plant/suid_backdoor.sh
+
+detection:
+  signatures:
+    - type: file_exists
+      path: /usr/local/bin/sysdiag
+  accept_evidence:
+    paths:
+      - /usr/local/bin/sysdiag
+      - /usr/local/bin
+    keywords:
+      - suid
+      - setuid
+      - "4000"
+      - sysdiag
+      - "perm -4000"
+    require: any
+
+remediation: >
+  Remove the SUID bit (`chmod u-s`) or delete the binary, then audit every
+  SUID/SGID file against a known-good baseline. Legitimate SUID binaries are a
+  short, well-known list; anything outside it — especially under /usr/local,
+  /tmp, or a home dir — is suspect.
+
+hunt_commands:
+  - "find / -perm -4000 -type f 2>/dev/null -ls"
+  - "ls -la /usr/local/bin"
+  - "stat /usr/local/bin/sysdiag"
+
+learn: >
+  Setting the SUID bit makes a program run as its owner (often root) regardless
+  of who launches it. Attackers plant a SUID shell or an abusable binary as a
+  durable local privilege-escalation path. Defenders baseline SUID binaries and
+  alert on any new one.

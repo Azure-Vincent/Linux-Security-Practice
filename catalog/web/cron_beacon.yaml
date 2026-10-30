@@ -1,0 +1,52 @@
+id: web-cron-beacon
+name: "Periodic beacon via cron (local sink)"
+service: web
+category: beacon
+difficulty: hard
+points: 150
+description: >
+  A cron job on the web host beacons every minute to the BeaconHunt local sink.
+  Contained by design — the callback points only at the internal 'sink'
+  service, never the internet — but it reproduces the detection surface of a C2
+  beacon living on a compromised web server.
+
+install:
+  script: plant/beacon_cron.sh
+
+detection:
+  signatures:
+    - type: cron
+      path: /etc/cron.d/beaconhunt-sync
+      match: "sink"
+    - type: file_line
+      path: /etc/cron.d/beaconhunt-sync
+      match: "beaconhunt-beacon"
+  accept_evidence:
+    paths:
+      - /etc/cron.d/beaconhunt-sync
+      - /etc/cron.d
+    keywords:
+      - cron
+      - beacon
+      - "/etc/cron.d"
+      - sink
+    ports:
+      - 9000
+    require: any
+
+remediation: >
+  Remove /etc/cron.d/beaconhunt-sync, kill any running beacon process, and block
+  the egress. Determine how it was installed (web shell? exposed creds?).
+  Baseline /etc/cron.d and user crontabs and alert on periodic outbound
+  connections to a single host.
+
+hunt_commands:
+  - "ls -la /etc/cron.d/ /etc/cron.*/ 2>/dev/null; cat /etc/cron.d/*"
+  - "ss -tnp | grep -i sink"
+  - "grep -R curl /etc/cron* /var/spool/cron 2>/dev/null"
+
+learn: >
+  A compromised web server is a common home for a beacon: the attacker already
+  has code execution, so they add a cron job or timer to call out on a schedule.
+  Detection is the same as anywhere — audit scheduled tasks and watch for
+  regular low-volume outbound 'beaconing' to one host.

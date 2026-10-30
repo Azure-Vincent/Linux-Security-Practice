@@ -1,0 +1,48 @@
+id: web-exposed-backup-creds
+name: "Exposed config backup leaks DB credentials"
+service: web
+category: weak-cred
+difficulty: easy
+points: 80
+description: >
+  A stale config.php.bak left in the webroot is served as plaintext (the .bak
+  extension isn't parsed by PHP), exposing the database host, user, and
+  password to anyone who requests it.
+
+install:
+  script: plant/exposed_backup.sh
+
+detection:
+  signatures:
+    - type: file_exists
+      path: /var/www/html/config.php.bak
+    - type: file_line
+      path: /var/www/html/config.php.bak
+      match: "beaconhunt-exposed"
+  accept_evidence:
+    paths:
+      - /var/www/html/config.php.bak
+      - /var/www/html
+    keywords:
+      - config.php.bak
+      - backup
+      - DB_PASS
+      - credentials
+      - ".bak"
+    require: any
+
+remediation: >
+  Remove backup/editor files (*.bak, *~, *.old, *.swp) from the webroot, rotate
+  the leaked database password immediately, and configure the server to refuse
+  serving backup extensions. Keep backups outside the document root.
+
+hunt_commands:
+  - "find /var/www -type f \\( -name '*.bak' -o -name '*~' -o -name '*.old' -o -name '*.swp' \\)"
+  - "ls -la /var/www/html"
+  - "curl -s http://127.0.0.1:8080/config.php.bak"
+
+learn: >
+  Editors and deploy scripts leave backup copies (config.php.bak, .swp, ~) that
+  the web server happily returns as text because they aren't the live
+  extension. That hands an attacker source code and secrets. Sweep the webroot
+  for backup artifacts and block those extensions at the server.

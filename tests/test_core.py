@@ -133,6 +133,24 @@ def test_hint_penalty_applied(catalog):
     assert result.final_points < art.points
 
 
+def test_web_service_catalog(catalog):
+    assert "web" in catalog.services
+    web = catalog.filter(service="web")
+    assert len(web) >= 5
+    cats = {a.category for a in web}
+    assert {"backdoor", "misconfig", "weak-cred", "beacon", "privesc"} <= cats
+
+
+def test_web_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=42, count=5, services=["web"])
+    art = catalog.get("web-php-webshell")
+    subs = [Submission(type="backdoor", service="web",
+                       evidence=art.accept_evidence.paths[0])]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "web-php-webshell"
+    assert result.scored[0].strength == "strong"
+
+
 def test_report_renders(catalog):
     scenario = generate_scenario(catalog, seed=1337, count=3, services=["ssh"])
     result = grade(scenario, catalog, [])
