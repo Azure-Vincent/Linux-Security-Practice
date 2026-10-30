@@ -15,9 +15,11 @@ Think "CTF generator + answer key + scoreboard" for system hardening.
 > * It runs **only** against `localhost` and the containers it spins up itself.
 >   Every network-touching command passes through `beaconhunt.safety`, which
 >   **refuses any external host**.
-> * The compose network is marked `internal: true`, so **no container can reach
->   the internet**. Planted "beacons" can only ever call the bundled local
->   `sink` container — never a real host.
+> * The `sink` container sits on an `internal: true` network with **no route to
+>   the internet**, and planted "beacons" are hardcoded to call the `sink`
+>   service name — so a beacon can only ever hit the bundled local sink, never a
+>   real host. Service ports are published on `127.0.0.1` only, so the range is
+>   reachable from your loopback but not from the LAN.
 > * Planted artifacts are **declawed training stubs**: realistic enough to hunt
 >   by signature, but neutered so they are not functioning weapons (e.g. the
 >   `sshrc` "backdoor" only writes a log marker; the rogue key's private half is

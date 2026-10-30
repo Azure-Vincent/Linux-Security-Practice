@@ -1,8 +1,12 @@
 # BeaconHunt training range.
 #
-# Containment by construction:
-#   * The 'range' network is marked internal, so NO container can reach the
-#     internet at runtime. Beacons can only ever hit the local 'sink'.
+# Containment:
+#   * The 'range' network is marked internal, so the 'sink' container is fully
+#     isolated — it has no route to the internet. Planted beacons are hardcoded
+#     to call the 'sink' service name, so they can only ever hit the local sink.
+#   * The ssh target also sits on a second 'edge' network. That is what lets the
+#     host publish its port; an internal-only container cannot publish a port,
+#     which is why SSH on 127.0.0.1:2222 was previously refused.
 #   * Service ports are published on 127.0.0.1 only — never 0.0.0.0 — so the
 #     range is reachable from the host loopback but not from the LAN.
 #
@@ -12,20 +16,21 @@ services:
   sink:
     build: ./services/sink
     container_name: beaconhunt-sink
-    networks: [range]
-    # Not published to the host; only in-range containers talk to it.
+    networks: [range]           # internal only: the sink is fully isolated
     restart: unless-stopped
 
   ssh:
     build: ./services/ssh
     container_name: beaconhunt-ssh
-    networks: [range]
+    networks: [range, edge]     # range: reach the sink · edge: publish the port
     ports:
-      - "127.0.0.1:2222:22"   # loopback only
+      - "127.0.0.1:2222:22"     # loopback only — not exposed to the LAN
     depends_on: [sink]
     restart: unless-stopped
 
 networks:
   range:
     name: beaconhunt-range
-    internal: true            # hard containment: no egress to the internet
+    internal: true              # hard isolation for the sink (no internet egress)
+  edge:
+    name: beaconhunt-edge       # lets the host reach ssh on 127.0.0.1:2222
