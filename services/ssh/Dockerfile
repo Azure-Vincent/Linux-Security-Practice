@@ -4,10 +4,20 @@ FROM debian:12-slim
 # becomes vulnerable when BeaconHunt plants artifacts into it at deploy time.
 RUN apt-get update \
     && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        openssh-server curl cron ca-certificates procps iproute2 \
+        openssh-server curl cron ca-certificates procps iproute2 sudo \
     && rm -rf /var/lib/apt/lists/*
 
 RUN mkdir -p /run/sshd /opt/beaconhunt/plant
+
+# Legitimate defender/admin account (NOT a planted finding). This is your
+# blue-team login: SSH in as 'defender' and use sudo to inspect and remediate,
+# just like you'd have admin on your own CCDC box. Override at build time with
+# --build-arg DEFENDER_PASSWORD=...
+ARG DEFENDER_USER=defender
+ARG DEFENDER_PASSWORD=defender
+RUN useradd -m -s /bin/bash "$DEFENDER_USER" \
+    && echo "$DEFENDER_USER:$DEFENDER_PASSWORD" | chpasswd \
+    && usermod -aG sudo "$DEFENDER_USER"
 
 # Hardened baseline. Planted drop-ins under sshd_config.d/ override this later.
 RUN sed -ri 's/^#?PermitRootLogin.*/PermitRootLogin no/' /etc/ssh/sshd_config \

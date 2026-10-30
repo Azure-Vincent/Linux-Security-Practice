@@ -106,7 +106,29 @@ beaconhunt generate --seed 1337 --count 4 --service ssh   # pick findings (seeda
 beaconhunt deploy                                         # docker compose up + plant
 ```
 
-Now hunt inside the range (SSH target is on `127.0.0.1:2222`), then submit:
+### Getting into the box to hunt
+
+There are two ways in, by design:
+
+| Access | How | Who it models |
+|--------|-----|----------------|
+| **Defender / admin** | `ssh defender@127.0.0.1 -p 2222` (password `defender`), then `sudo …` — or `docker compose -p beaconhunt exec ssh bash` for a direct root shell | **You**, the blue-teamer with admin on your own box. Use this to inspect and **remediate**. |
+| **Attacker foothold** | `ssh svc-backup@127.0.0.1 -p 2222` (password `Summer2024`) | A low-priv account an intruder landed — it *is* one of the findings. Unprivileged on purpose; it can't read `/root` or `sudo`. |
+
+So to fix root-owned findings (e.g. the `authorized_keys` backdoor), log in as
+`defender` and `sudo`, or exec in as root:
+
+```bash
+ssh defender@127.0.0.1 -p 2222            # password: defender
+sudo cat /root/.ssh/authorized_keys
+sudo sed -i '/beaconhunt-trainingkey/d' /root/.ssh/authorized_keys
+```
+
+The `defender` account is part of the base image — it is **not** a planted
+finding and is never graded. Change its password at build time with
+`--build-arg DEFENDER_PASSWORD=…`.
+
+Now hunt inside the range, then submit:
 
 ```bash
 beaconhunt submit --type backdoor  --service ssh \
