@@ -1,0 +1,43 @@
+id: ssh-permit-root-login
+name: "PermitRootLogin enabled via drop-in"
+service: ssh
+category: misconfig
+difficulty: easy
+points: 80
+description: >
+  A drop-in config under /etc/ssh/sshd_config.d/ re-enables direct root login
+  with a password, overriding the hardened default.
+
+install:
+  script: plant/permit_root_login.sh
+
+detection:
+  signatures:
+    - type: config
+      path: /etc/ssh/sshd_config.d/99-beaconhunt.conf
+      match: "PermitRootLogin yes"
+  accept_evidence:
+    paths:
+      - /etc/ssh/sshd_config.d/99-beaconhunt.conf
+      - /etc/ssh/sshd_config.d
+      - /etc/ssh/sshd_config
+    keywords:
+      - PermitRootLogin
+      - sshd_config
+    require: any
+
+remediation: >
+  Remove or correct the drop-in so PermitRootLogin is 'no' (or
+  'prohibit-password'). Verify the effective setting with `sshd -T |
+  grep permitrootlogin` and reload sshd.
+
+hunt_commands:
+  - "sshd -T | grep -i permitrootlogin"
+  - "grep -ri permitrootlogin /etc/ssh/"
+  - "ls -l /etc/ssh/sshd_config.d/"
+
+learn: >
+  sshd reads drop-in files in /etc/ssh/sshd_config.d/ in lexical order, and a
+  later file can override the main config. Attackers (and careless admins) use
+  a drop-in to quietly loosen policy without touching the main sshd_config that
+  everyone reviews. Always check the *effective* config with `sshd -T`.

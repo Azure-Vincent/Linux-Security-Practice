@@ -1,0 +1,46 @@
+id: ssh-malicious-sshrc
+name: "Persistence via /etc/ssh/sshrc"
+service: ssh
+category: persistence
+difficulty: medium
+points: 130
+description: >
+  An /etc/ssh/sshrc hook runs on every SSH login. The planted (declawed) hook
+  writes a timestamped marker to a training log instead of executing a payload,
+  but matches the signature a real sshrc backdoor would carry.
+
+install:
+  script: plant/malicious_sshrc.sh
+
+detection:
+  signatures:
+    - type: file_exists
+      path: /etc/ssh/sshrc
+    - type: file_line
+      path: /etc/ssh/sshrc
+      match: "beaconhunt-sshrc-marker"
+  accept_evidence:
+    paths:
+      - /etc/ssh/sshrc
+      - /root/.ssh/rc
+    keywords:
+      - sshrc
+      - "/etc/ssh/sshrc"
+      - beaconhunt-sshrc-marker
+    require: any
+
+remediation: >
+  Remove /etc/ssh/sshrc (and any per-user ~/.ssh/rc) unless you deliberately
+  use it. Review what it executed and treat any login since planting as
+  suspect. Baseline /etc/ssh/ and alert on new files there.
+
+hunt_commands:
+  - "cat /etc/ssh/sshrc ~/.ssh/rc 2>/dev/null"
+  - "ls -la /etc/ssh/ | grep -i rc"
+  - "stat /etc/ssh/sshrc   # when did it appear?"
+
+learn: >
+  sshd executes /etc/ssh/sshrc (or ~/.ssh/rc) for every interactive session,
+  making it a reliable persistence and keylogging hook that fires on each
+  login. It is rarely used legitimately, so its mere presence is worth
+  investigating.

@@ -1,0 +1,55 @@
+id: ssh-beacon-cron
+name: "Periodic beacon via cron (local sink)"
+service: ssh
+category: beacon
+difficulty: hard
+points: 150
+description: >
+  A cron job beacons every minute to the BeaconHunt local sink container. It is
+  deliberately contained — the callback URL points only at the internal 'sink'
+  service, never the internet — but it reproduces the detection surface of a
+  real C2 beacon: a periodic outbound connection from an unexpected scheduled
+  task.
+
+install:
+  script: plant/beacon_cron.sh
+
+detection:
+  signatures:
+    - type: cron
+      path: /etc/cron.d/beaconhunt-sync
+      match: "sink"
+    - type: file_line
+      path: /etc/cron.d/beaconhunt-sync
+      match: "beaconhunt-beacon"
+  accept_evidence:
+    paths:
+      - /etc/cron.d/beaconhunt-sync
+      - /etc/cron.d
+      - /var/spool/cron
+    keywords:
+      - cron
+      - beacon
+      - "/etc/cron.d"
+      - sink
+    ports:
+      - 9000
+    require: any
+
+remediation: >
+  Remove /etc/cron.d/beaconhunt-sync, kill any running beacon process, and
+  block the egress. Investigate how the job was installed (what account, what
+  it fetched). Baseline /etc/cron.d, /etc/cron.*, and user crontabs; alert on
+  additions and on periodic outbound connections to unexpected hosts.
+
+hunt_commands:
+  - "ls -la /etc/cron.d/ /etc/cron.*/ 2>/dev/null"
+  - "cat /etc/cron.d/*"
+  - "ss -tnp | grep -i sink   # catch the callback in flight"
+  - "grep -R curl /etc/cron* /var/spool/cron 2>/dev/null"
+
+learn: >
+  C2 beacons 'phone home' on a schedule to receive commands. On Linux a cron
+  job or systemd timer is a common, reboot-surviving way to keep a beacon
+  alive. Defenders find them by auditing all scheduled tasks and by watching
+  for regular, low-volume outbound connections ('beaconing') to a single host.

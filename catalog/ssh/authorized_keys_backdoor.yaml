@@ -1,0 +1,43 @@
+id: ssh-authorized-keys-backdoor
+name: "Rogue key in root's authorized_keys"
+service: ssh
+category: backdoor
+difficulty: easy
+points: 100
+description: >
+  An attacker-controlled public key was appended to root's authorized_keys,
+  granting passwordless SSH as root. The key carries an obvious training
+  marker in its comment field.
+
+install:
+  script: plant/authorized_keys_backdoor.sh
+
+detection:
+  signatures:
+    - type: file_line
+      path: /root/.ssh/authorized_keys
+      match: "beaconhunt-trainingkey"
+  accept_evidence:
+    paths:
+      - /root/.ssh/authorized_keys
+    keywords:
+      - authorized_keys
+      - "ssh-ed25519"
+      - "beaconhunt-trainingkey"
+    require: any
+
+remediation: >
+  Remove the unauthorized key line from /root/.ssh/authorized_keys, then audit
+  all users' authorized_keys files. Rotate any trusted keys and disable
+  key-based root login (PermitRootLogin prohibit-password at most).
+
+hunt_commands:
+  - "cat /root/.ssh/authorized_keys"
+  - "find / -name authorized_keys 2>/dev/null -exec ls -l {} +"
+  - "awk '{print $NF}' /root/.ssh/authorized_keys   # eyeball key comments"
+
+learn: >
+  Appending a public key to authorized_keys is one of the quietest SSH
+  persistence techniques — no new account, no password, survives reboots, and
+  blends in with legitimate keys. Defenders catch it by baselining expected
+  keys and alerting on changes to any authorized_keys file.

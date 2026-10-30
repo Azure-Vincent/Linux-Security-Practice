@@ -1,0 +1,48 @@
+id: ssh-weak-shared-cred
+name: "Service account with weak password"
+service: ssh
+category: weak-cred
+difficulty: medium
+points: 120
+description: >
+  A service account 'svc-backup' was created with a weak, guessable password
+  and a real login shell, usable for SSH password authentication.
+
+install:
+  script: plant/weak_shared_cred.sh
+
+detection:
+  signatures:
+    - type: user
+      path: /etc/passwd
+      match: "svc-backup"
+    - type: config
+      path: /etc/shadow
+      match: "svc-backup"
+  accept_evidence:
+    paths:
+      - /etc/passwd
+      - /etc/shadow
+    keywords:
+      - svc-backup
+      - weak password
+      - shadow
+    users:
+      - svc-backup
+    require: any
+
+remediation: >
+  Disable or remove the account (`usermod -L` / `userdel`), or set a strong
+  unique password and a nologin shell if the account is unnecessary for
+  interactive use. Enforce a password policy and prefer key-based auth.
+
+hunt_commands:
+  - "awk -F: '$7 ~ /sh$/ {print $1, $7}' /etc/passwd   # accounts with real shells"
+  - "getent passwd svc-backup"
+  - "sudo grep svc-backup /etc/shadow   # inspect the hash / aging"
+
+learn: >
+  Weak or shared service-account credentials are a top CCDC foothold: the
+  account looks plausible ('backup', 'monitor', 'svc-*') and password auth lets
+  an attacker straight in. Hunt for unexpected accounts with login shells and
+  weak or non-expiring passwords.
