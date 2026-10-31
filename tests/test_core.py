@@ -185,6 +185,23 @@ def test_smb_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_host_service_catalog(catalog):
+    assert "host" in catalog.services
+    host = catalog.filter(service="host")
+    assert len(host) >= 5
+    cats = {a.category for a in host}
+    assert {"backdoor", "privesc", "persistence", "misconfig", "beacon"} <= cats
+
+
+def test_host_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=9, count=5, services=["host"])
+    subs = [Submission(type="backdoor", service="host",
+                       evidence="toor uid 0 in /etc/passwd")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "host-uid0-account"
+    assert result.scored[0].strength == "strong"
+
+
 def test_report_renders(catalog):
     scenario = generate_scenario(catalog, seed=1337, count=3, services=["ssh"])
     result = grade(scenario, catalog, [])

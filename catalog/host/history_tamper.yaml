@@ -1,0 +1,42 @@
+id: host-history-tamper
+name: "Shell history disabled (anti-forensics)"
+service: host
+category: misconfig
+difficulty: easy
+points: 80
+description: >
+  A /etc/profile.d script disables shell history for all users and /root's
+  .bash_history was symlinked to /dev/null — an anti-forensics move to hide what
+  an attacker ran.
+install:
+  script: plant/history_tamper.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /etc/profile.d/00-history.sh
+      match: "beaconhunt-histoff"
+  accept_evidence:
+    paths:
+      - /etc/profile.d/00-history.sh
+      - /etc/profile.d
+      - /root/.bash_history
+    keywords:
+      - HISTFILE
+      - history
+      - "/dev/null"
+      - profile.d
+      - "anti-forensics"
+    require: any
+remediation: >
+  Remove the profile.d script and restore a real .bash_history (delete the
+  symlink to /dev/null). Treat disabled history as a strong indicator of hands-
+  on-keyboard activity and investigate the host's timeline from other logs.
+hunt_commands:
+  - "ls -la /root/.bash_history ~/.bash_history"
+  - "cat /etc/profile.d/*.sh; grep -R HISTFILE /etc/profile.d /etc/profile"
+  - "find / -name .bash_history -lname /dev/null 2>/dev/null"
+learn: >
+  Attackers disable or null shell history (HISTFILE=/dev/null, symlinking
+  .bash_history to /dev/null) to cover their tracks. Its absence is itself a
+  finding — hunt for nulled history files and HISTFILE tampering in profile
+  scripts.

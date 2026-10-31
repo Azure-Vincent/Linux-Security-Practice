@@ -1,0 +1,43 @@
+id: host-rogue-systemd-timer
+name: "Rogue systemd timer (persistence)"
+service: host
+category: persistence
+difficulty: hard
+points: 150
+description: >
+  A systemd timer+service pair (beaconhunt-sync) was planted in
+  /etc/systemd/system to beacon the local sink on a schedule — a modern,
+  reboot-surviving replacement for cron persistence.
+install:
+  script: plant/systemd_timer.sh
+detection:
+  signatures:
+    - type: timer
+      path: /etc/systemd/system/beaconhunt-sync.timer
+      match: "beaconhunt-timer"
+  accept_evidence:
+    paths:
+      - /etc/systemd/system/beaconhunt-sync.timer
+      - /etc/systemd/system/beaconhunt-sync.service
+      - /etc/systemd/system
+    keywords:
+      - systemd
+      - timer
+      - "beaconhunt-sync"
+      - "list-timers"
+      - persistence
+    require: any
+remediation: >
+  Disable and remove both units (`systemctl disable --now beaconhunt-sync.timer`
+  then delete the .timer/.service), and reload systemd. Baseline the units in
+  /etc/systemd/system and /lib/systemd/system and alert on additions.
+hunt_commands:
+  - "systemctl list-timers --all   # on a real host"
+  - "ls -la /etc/systemd/system/*.timer /etc/systemd/system/*.service"
+  - "grep -R ExecStart /etc/systemd/system"
+learn: >
+  systemd timers and services are the modern persistence mechanism — attackers
+  prefer them over cron because they integrate with the init system and survive
+  reboots. Enumerate timers with `systemctl list-timers --all` and baseline all
+  unit files. (In this container systemd isn't PID 1, so inspect the unit files
+  on disk.)

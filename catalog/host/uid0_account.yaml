@@ -1,0 +1,39 @@
+id: host-uid0-account
+name: "Second UID-0 account in /etc/passwd"
+service: host
+category: backdoor
+difficulty: hard
+points: 150
+description: >
+  A second account ('toor') with UID 0 was added to /etc/passwd — a hidden root
+  that is easy to miss because the username isn't 'root'.
+install:
+  script: plant/uid0_account.sh
+detection:
+  signatures:
+    - type: user
+      path: /etc/passwd
+      match: "toor"
+  accept_evidence:
+    paths:
+      - /etc/passwd
+    users: ["toor"]
+    keywords:
+      - toor
+      - "uid 0"
+      - "0:0"
+      - "second root"
+      - passwd
+    require: any
+remediation: >
+  Remove the rogue line from /etc/passwd (and any matching /etc/shadow entry).
+  There must be exactly one UID-0 account (root). Alert on any additional UID-0
+  user and baseline /etc/passwd.
+hunt_commands:
+  - "awk -F: '($3==0){print $1}' /etc/passwd   # every UID-0 account"
+  - "grep ':0:0:' /etc/passwd"
+  - "getent passwd | awk -F: '$3==0'"
+learn: >
+  Any account with UID 0 is root, regardless of its name. Adding a second UID-0
+  user is a classic backdoor that survives password changes to the real root.
+  The one-liner `awk -F: '($3==0)' /etc/passwd` surfaces them all.

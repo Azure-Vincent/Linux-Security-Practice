@@ -57,11 +57,13 @@ beaconhunt/
 ├── catalog/web/*.yaml          # web-server findings
 ├── catalog/db/*.yaml           # database findings
 ├── catalog/smb/*.yaml          # Samba/SMB findings
+├── catalog/host/*.yaml         # host-level findings (passwd/sudoers/systemd/…)
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
 │   ├── web/                    # hardened Apache+PHP target + declawed plant scripts
 │   ├── db/                     # hardened MariaDB target + declawed SQL plant scripts
 │   ├── smb/                    # hardened Samba target + declawed plant scripts
+│   ├── host/                   # generic Linux host + declawed host-level plant scripts
 │   └── sink/                   # local beacon sink (stands in for C2)
 ├── state/                      # scenarios, round state, scoreboard (git-ignored)
 └── tests/                      # offline engine tests (no Docker needed)
@@ -310,18 +312,24 @@ python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, r
 
 ### Status
 
-SSH, the web server (Apache+PHP), the database (MariaDB), and SMB (Samba) are
-implemented end-to-end (plant → hunt → grade → report → scoreboard → learn),
-20 findings total. Host-level artifacts follow the same pattern and are next.
+All five services are implemented end-to-end (plant → hunt → grade → report →
+scoreboard → learn): SSH, the web server (Apache+PHP), the database (MariaDB),
+SMB (Samba), and a generic Linux host for host-level artifacts — **25 findings
+across all six categories**.
 
 Targets and how to hunt them:
 
 | Service | Port | Get in to hunt / remediate |
 |---------|------|-----------------------------|
-| ssh | `127.0.0.1:2222` | `ssh defender@127.0.0.1 -p 2222` (sudo), or `docker compose -p beaconhunt exec ssh bash` |
-| web | `127.0.0.1:8080` | browser, or `docker compose -p beaconhunt exec web bash` (root) |
-| db  | `127.0.0.1:3306` | `docker compose -p beaconhunt exec db mariadb -uroot -pbeaconhunt-root` |
-| smb | `127.0.0.1:445`  | `docker compose -p beaconhunt exec smb bash` (root); enumerate with `testparm -s`, `smbclient -L //127.0.0.1 -N`, `pdbedit -L` |
+| ssh  | `127.0.0.1:2222` | `ssh defender@127.0.0.1 -p 2222` (sudo), or `docker compose -p beaconhunt exec ssh bash` |
+| web  | `127.0.0.1:8080` | browser, or `docker compose -p beaconhunt exec web bash` (root) |
+| db   | `127.0.0.1:3306` | `docker compose -p beaconhunt exec db mariadb -uroot -pbeaconhunt-root` |
+| smb  | `127.0.0.1:445`  | `docker compose -p beaconhunt exec smb bash` (root); `testparm -s`, `smbclient -L //127.0.0.1 -N`, `pdbedit -L` |
+| host | `127.0.0.1:2200` | `ssh defender@127.0.0.1 -p 2200` (sudo), or `docker compose -p beaconhunt exec host bash` |
+
+Host-level hunting: `awk -F: '($3==0)' /etc/passwd` (UID-0 accounts),
+`cat /etc/sudoers.d/*`, `ls -la /etc/systemd/system/*.timer`, `ss -tlnp`
+(unexpected listeners), `grep -R HISTFILE /etc/profile.d`.
 
 The DB findings are hunted with SQL — e.g. `SELECT User,Host FROM mysql.user;`,
 `SHOW GRANTS FOR 'webapp'@'%';`, `SELECT trigger_name, action_statement FROM

@@ -136,8 +136,6 @@ def deploy(scenario, log: OnLine) -> int:
         by_service.setdefault(f.service, []).append(f.artifact_id)
 
     for service, ids in by_service.items():
-        if service == "host":
-            continue
         log(f"Planting {len(ids)} finding(s) in '{service}'…")
         rc = _stream(_compose("exec", "-T", service,
                               "/opt/beaconhunt/plant/plant-dispatch.sh", *ids), log)

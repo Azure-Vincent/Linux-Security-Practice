@@ -113,8 +113,6 @@ def cmd_deploy(args) -> int:
         by_service.setdefault(f.service, []).append(f.artifact_id)
 
     for service, ids in by_service.items():
-        if service == "host":
-            continue  # host-level artifacts are planted inside service containers
         print(f"\nPlanting {len(ids)} finding(s) in '{service}' ...")
         rc = _compose(
             "exec", "-T", service,

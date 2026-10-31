@@ -1,0 +1,40 @@
+id: host-sudoers-nopasswd
+name: "Passwordless sudo via /etc/sudoers.d"
+service: host
+category: privesc
+difficulty: medium
+points: 120
+description: >
+  A drop-in under /etc/sudoers.d grants a planted account ('svcops')
+  passwordless root (NOPASSWD:ALL) — instant privilege escalation that bypasses
+  the main sudoers everyone reviews.
+install:
+  script: plant/sudoers_nopasswd.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/sudoers.d/99-beaconhunt
+      match: "beaconhunt-sudoers"
+  accept_evidence:
+    paths:
+      - /etc/sudoers.d/99-beaconhunt
+      - /etc/sudoers.d
+      - /etc/sudoers
+    keywords:
+      - sudoers
+      - NOPASSWD
+      - svcops
+      - "ALL=(ALL)"
+    require: any
+remediation: >
+  Remove the drop-in (or the offending line). Audit everything sudo grants with
+  `sudo -ll` and review every file in /etc/sudoers.d. Legitimate NOPASSWD rules
+  should be rare, specific, and documented.
+hunt_commands:
+  - "ls -la /etc/sudoers.d/; cat /etc/sudoers.d/*"
+  - "grep -R NOPASSWD /etc/sudoers /etc/sudoers.d"
+  - "sudo -ll 2>/dev/null"
+learn: >
+  sudo reads every file in /etc/sudoers.d in addition to the main sudoers, so a
+  single drop-in can silently grant passwordless root. Review all of them, and
+  alert on new files there and on any NOPASSWD:ALL rule.

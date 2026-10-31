@@ -1,0 +1,38 @@
+id: host-unexpected-listener
+name: "Unexpected listening port (tcp/4444)"
+service: host
+category: beacon
+difficulty: medium
+points: 120
+description: >
+  An unexpected service is listening on tcp/4444. A real finding here is often a
+  bind shell or an implant's control port; this declawed listener just accepts
+  and discards connections, but it shows up exactly the same in `ss -tlnp`.
+install:
+  script: plant/unexpected_listener.sh
+detection:
+  signatures:
+    - type: port
+      match: "4444"
+  accept_evidence:
+    ports: [4444]
+    keywords:
+      - "4444"
+      - listener
+      - "ss -tlnp"
+      - "bind shell"
+      - "listening port"
+    require: keyword
+remediation: >
+  Identify the process (`ss -tlnp` / `lsof -i :4444`), kill it, and remove
+  whatever starts it. Baseline expected listening ports and alert on any new
+  listener, especially on odd ports like 4444/1337/31337.
+hunt_commands:
+  - "ss -tlnp"
+  - "lsof -i -P -n | grep LISTEN"
+  - "ss -tlnp | grep ':4444'"
+learn: >
+  An unexpected listening port is one of the fastest tells of a compromise — a
+  bind shell, a backdoor, or an implant's control channel. Baseline the ports a
+  host should expose and investigate anything else, mapping each listener back
+  to its process and the unit/script that launched it.
