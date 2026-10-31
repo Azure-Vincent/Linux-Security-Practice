@@ -1,0 +1,43 @@
+id: redis-cron-beacon
+name: "Periodic beacon via cron (local sink)"
+service: redis
+category: beacon
+difficulty: hard
+points: 150
+description: >
+  A cron job on the Redis host beacons every minute to the BeaconHunt local
+  sink. Contained by design (callback points only at the internal 'sink'), it
+  reproduces the detection surface of a C2 beacon on a compromised data store.
+install:
+  script: plant/beacon_cron.sh
+detection:
+  signatures:
+    - type: cron
+      path: /etc/cron.d/beaconhunt-sync
+      match: "sink"
+    - type: file_line
+      path: /etc/cron.d/beaconhunt-sync
+      match: "beaconhunt-beacon"
+  accept_evidence:
+    paths:
+      - /etc/cron.d/beaconhunt-sync
+      - /etc/cron.d
+    keywords:
+      - cron
+      - beacon
+      - "/etc/cron.d"
+      - sink
+    ports:
+      - 9000
+    require: any
+remediation: >
+  Remove /etc/cron.d/beaconhunt-sync, kill any running beacon, and block the
+  egress. Baseline scheduled tasks and watch for periodic outbound connections
+  to a single host.
+hunt_commands:
+  - "ls -la /etc/cron.d/; cat /etc/cron.d/*"
+  - "ss -tnp | grep -i sink"
+  - "grep -R curl /etc/cron* /var/spool/cron 2>/dev/null"
+learn: >
+  Any compromised host can carry a beacon. Audit scheduled tasks and watch for
+  regular, low-volume outbound 'beaconing' to a single host.

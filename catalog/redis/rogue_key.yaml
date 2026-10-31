@@ -1,0 +1,37 @@
+id: redis-rogue-key
+name: "Rogue key holding attacker data"
+service: redis
+category: backdoor
+difficulty: medium
+points: 120
+description: >
+  A key 'beaconhunt:backdoor' holding attacker-controlled data was written and
+  persisted to the RDB, so it survives restarts. Rogue keys are used to stage
+  payloads, store stolen data, or signal between implants.
+install:
+  script: plant/rogue_key.sh
+detection:
+  signatures:
+    - type: command
+      command: "redis-cli --scan --pattern 'beaconhunt:*'"
+      match: "beaconhunt:backdoor"
+  accept_evidence:
+    keywords:
+      - "beaconhunt:backdoor"
+      - "rogue key"
+      - "redis-cli"
+      - KEYS
+      - backdoor
+    require: keyword
+remediation: >
+  Delete the rogue key (DEL beaconhunt:backdoor) and audit the keyspace for
+  unexpected keys. Review how it was written (unauth access? weak password?) and
+  remediate that root cause. Restrict who can write to Redis with ACLs.
+hunt_commands:
+  - "redis-cli -a <pass> --no-auth-warning --scan"
+  - "redis-cli -a <pass> --no-auth-warning KEYS '*'"
+  - "redis-cli -a <pass> --no-auth-warning GET beaconhunt:backdoor"
+learn: >
+  Because Redis persists to disk, an attacker's keys survive restarts and can
+  carry staged payloads or exfiltrated data. Baseline expected key namespaces
+  and alert on unexpected keys, especially large or oddly-named ones.

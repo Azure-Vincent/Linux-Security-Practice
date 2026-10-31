@@ -1,0 +1,40 @@
+id: redis-no-auth
+name: "Redis with no authentication, exposed on all interfaces"
+service: redis
+category: misconfig
+difficulty: easy
+points: 90
+description: >
+  redis.conf has 'protected-mode no', 'bind 0.0.0.0', and no 'requirepass', so
+  anyone who can reach the port has full, unauthenticated control of the
+  database — including CONFIG and the ability to write files.
+install:
+  script: plant/no_auth.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/redis/redis.conf
+      match: "beaconhunt-noauth"
+  accept_evidence:
+    paths:
+      - /etc/redis/redis.conf
+    keywords:
+      - protected-mode
+      - requirepass
+      - "bind 0.0.0.0"
+      - "no auth"
+      - redis.conf
+    require: any
+remediation: >
+  Set a strong 'requirepass' (or ACL users), 'protected-mode yes', and bind to
+  the loopback or a trusted interface only. Never expose an unauthenticated
+  Redis. Restart redis and verify auth is required.
+hunt_commands:
+  - "grep -nE 'bind|protected-mode|requirepass' /etc/redis/redis.conf"
+  - "redis-cli -p 6379 ping   # NOAUTH expected if hardened"
+  - "ss -tlnp | grep 6379"
+learn: >
+  Unauthenticated, internet-reachable Redis is one of the most-exploited
+  misconfigurations — attackers use CONFIG SET to write SSH keys, cron jobs, or
+  web shells and get code execution. Require auth, enable protected-mode, and
+  bind to trusted interfaces only.

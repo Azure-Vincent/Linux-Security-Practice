@@ -202,6 +202,23 @@ def test_mail_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_redis_service_catalog(catalog):
+    assert "redis" in catalog.services
+    rds = catalog.filter(service="redis")
+    assert len(rds) >= 5
+    cats = {a.category for a in rds}
+    assert {"misconfig", "weak-cred", "backdoor", "persistence", "beacon"} <= cats
+
+
+def test_redis_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=4, count=5, services=["redis"])
+    subs = [Submission(type="backdoor", service="redis",
+                       evidence="rogue key beaconhunt:backdoor")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "redis-rogue-key"
+    assert result.scored[0].strength == "strong"
+
+
 def test_dns_service_catalog(catalog):
     assert "dns" in catalog.services
     dns = catalog.filter(service="dns")

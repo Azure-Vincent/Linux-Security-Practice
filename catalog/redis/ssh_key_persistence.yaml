@@ -1,0 +1,43 @@
+id: redis-ssh-key-persistence
+name: "SSH key written via Redis (CONFIG SET persistence)"
+service: redis
+category: persistence
+difficulty: hard
+points: 150
+description: >
+  An authorized_keys file was dropped in /root/.ssh — the classic outcome of the
+  Redis RCE where an attacker uses CONFIG SET dir/dbfilename plus SET/SAVE to
+  write an SSH key. The planted key is fake/non-usable, but the artifact is what
+  a defender finds.
+install:
+  script: plant/ssh_key_persistence.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /root/.ssh/authorized_keys
+      match: "beaconhunt-redis-persist"
+  accept_evidence:
+    paths:
+      - /root/.ssh/authorized_keys
+      - /root/.ssh
+    keywords:
+      - authorized_keys
+      - "CONFIG SET"
+      - dbfilename
+      - "redis persistence"
+      - "ssh key"
+    require: any
+remediation: >
+  Remove the unauthorized authorized_keys entry, then fix the Redis exposure
+  that allowed it (auth + protected-mode + bind). Consider the host compromised:
+  rotate keys and review for other artifacts (cron, web shells) written the same
+  way.
+hunt_commands:
+  - "cat /root/.ssh/authorized_keys"
+  - "find / -name authorized_keys -newermt '-7 days' 2>/dev/null"
+  - "grep -nE 'dir|dbfilename' /etc/redis/redis.conf   # abused for file writes"
+learn: >
+  Given write access, Redis can be told to save its dump wherever you like with
+  whatever filename — so attackers point it at ~/.ssh/authorized_keys, /etc/cron.d,
+  or the webroot and SAVE a payload. Hunt for files recently written by the redis
+  user and for unexpected dir/dbfilename changes.

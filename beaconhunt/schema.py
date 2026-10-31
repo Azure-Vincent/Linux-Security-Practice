@@ -44,14 +44,14 @@ from typing import Any
 
 import yaml
 
-KNOWN_SERVICES = {"ssh", "web", "db", "smb", "mail", "ftp", "dns", "host"}
+KNOWN_SERVICES = {"ssh", "web", "db", "smb", "mail", "ftp", "dns", "redis", "host"}
 KNOWN_CATEGORIES = {
     "backdoor", "beacon", "persistence", "misconfig", "weak-cred", "privesc",
 }
 KNOWN_DIFFICULTIES = {"easy", "medium", "hard"}
 KNOWN_SIGNATURE_TYPES = {
     "file_line", "file_exists", "process", "port", "user", "config", "cron", "timer",
-    "sql",
+    "sql", "command",
 }
 REQUIRE_MODES = {"path", "keyword", "any"}
 
