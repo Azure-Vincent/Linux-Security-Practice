@@ -57,6 +57,16 @@ services:
     depends_on: [sink]
     restart: unless-stopped
 
+  mail:
+    build: ./services/mail
+    container_name: beaconhunt-mail
+    networks: [range, edge]     # range: reach the sink · edge: publish the ports
+    ports:
+      - "127.0.0.1:2525:25"     # SMTP  (loopback only)
+      - "127.0.0.1:1143:143"    # IMAP  (loopback only)
+    depends_on: [sink]
+    restart: unless-stopped
+
   host:
     build: ./services/host
     container_name: beaconhunt-host

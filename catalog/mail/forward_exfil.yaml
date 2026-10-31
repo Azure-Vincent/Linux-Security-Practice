@@ -1,0 +1,40 @@
+id: mail-forward-exfil
+name: "~/.forward redirects mail to a collection address"
+service: mail
+category: persistence
+difficulty: medium
+points: 110
+description: >
+  A .forward file in a user's home silently redirects all of their mail to an
+  attacker-controlled collection address — quiet, persistent exfiltration of
+  everything the victim receives.
+install:
+  script: plant/forward_exfil.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /home/alice/.forward
+      match: "beaconhunt-collect"
+  accept_evidence:
+    paths:
+      - /home/alice/.forward
+      - /home/alice
+    keywords:
+      - ".forward"
+      - forward
+      - redirect
+      - exfil
+      - "beaconhunt-collect"
+    require: any
+remediation: >
+  Remove the rogue .forward, and audit every user's ~/.forward for unexpected
+  external addresses or pipes. Consider disabling user .forward processing and
+  managing forwarding centrally.
+hunt_commands:
+  - "grep -r . /home/*/.forward 2>/dev/null"
+  - "ls -la /home/*/.forward"
+  - "grep -R '@' /home/*/.forward 2>/dev/null"
+learn: >
+  A single ~/.forward line can CC or redirect a user's entire mail stream to an
+  outside address, exfiltrating messages continuously with no malware on disk.
+  Baseline .forward files and alert on external destinations.

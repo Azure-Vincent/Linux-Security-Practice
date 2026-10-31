@@ -185,6 +185,23 @@ def test_smb_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_mail_service_catalog(catalog):
+    assert "mail" in catalog.services
+    mail = catalog.filter(service="mail")
+    assert len(mail) >= 5
+    cats = {a.category for a in mail}
+    assert {"misconfig", "weak-cred", "backdoor", "persistence", "beacon"} <= cats
+
+
+def test_mail_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=11, count=5, services=["mail"])
+    subs = [Submission(type="backdoor", service="mail",
+                       evidence="/etc/aliases pipe to mailhook")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "mail-alias-backdoor"
+    assert result.scored[0].strength == "strong"
+
+
 def test_host_service_catalog(catalog):
     assert "host" in catalog.services
     host = catalog.filter(service="host")

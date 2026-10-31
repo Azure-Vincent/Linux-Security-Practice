@@ -1,0 +1,37 @@
+id: mail-weak-mailbox-cred
+name: "Mailbox account with a weak password"
+service: mail
+category: weak-cred
+difficulty: easy
+points: 90
+description: >
+  A mailbox account 'mailtest' was created with a weak, guessable password,
+  usable to authenticate to SMTP submission and IMAP/POP3.
+install:
+  script: plant/weak_mailbox_cred.sh
+detection:
+  signatures:
+    - type: user
+      path: /etc/passwd
+      match: "mailtest"
+  accept_evidence:
+    users: ["mailtest"]
+    keywords:
+      - mailtest
+      - "weak password"
+      - mailbox
+      - dovecot
+      - "mail user"
+    require: keyword
+remediation: >
+  Disable or remove the account and set strong, unique passwords on all
+  mailboxes. Enforce a password policy, rate-limit auth, and prefer app
+  passwords / MFA for submission where supported.
+hunt_commands:
+  - "getent passwd mailtest"
+  - "doveadm user '*' 2>/dev/null; awk -F: '$7 ~ /nologin/ {print $1}' /etc/passwd"
+  - "grep -R mailtest /etc/dovecot 2>/dev/null"
+learn: >
+  Mail accounts are a prime target: a weak mailbox password gives an attacker a
+  way to send authenticated (and therefore trusted) mail and to read the
+  victim's inbox. Audit mailbox accounts for weak or shared credentials.

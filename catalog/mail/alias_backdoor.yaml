@@ -1,0 +1,40 @@
+id: mail-alias-backdoor
+name: "Mail alias pipes to a command (delivery backdoor)"
+service: mail
+category: backdoor
+difficulty: medium
+points: 130
+description: >
+  An /etc/aliases entry pipes incoming mail for 'support' to a command
+  (/usr/local/bin/mailhook.sh). Delivering mail to that alias runs the command —
+  a backdoor triggered simply by sending an email.
+install:
+  script: plant/alias_backdoor.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/aliases
+      match: "beaconhunt-alias"
+  accept_evidence:
+    paths:
+      - /etc/aliases
+      - /usr/local/bin/mailhook.sh
+    keywords:
+      - aliases
+      - mailhook
+      - "pipe"
+      - "|/usr/local/bin"
+      - "command"
+    require: any
+remediation: >
+  Remove the piping alias from /etc/aliases (and any .forward equivalents), run
+  newaliases, and delete the hook script. Review all aliases and forwards for
+  '|command' pipes, which should be rare and tightly controlled.
+hunt_commands:
+  - "grep -n '|' /etc/aliases"
+  - "cat /etc/aliases; ls -la /usr/local/bin"
+  - "find /home -name .forward -exec cat {} +"
+learn: >
+  Mail aliases and ~/.forward files can deliver mail to a program via a '|pipe'.
+  An attacker adds a pipe to their script so that sending an email executes
+  code — email-triggered persistence. Hunt for pipe aliases and forwards.

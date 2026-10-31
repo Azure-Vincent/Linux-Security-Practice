@@ -1,0 +1,42 @@
+id: mail-open-relay
+name: "Postfix configured as an open relay"
+service: mail
+category: misconfig
+difficulty: hard
+points: 150
+description: >
+  main.cf sets 'mynetworks = 0.0.0.0/0' and permits relaying from anywhere,
+  turning the server into an open relay that anyone can use to send mail —
+  abused for spam and spoofing, and quickly blacklists the domain.
+install:
+  script: plant/open_relay.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/postfix/main.cf
+      match: "beaconhunt-relay"
+  accept_evidence:
+    paths:
+      - /etc/postfix/main.cf
+      - /etc/postfix
+    keywords:
+      - "open relay"
+      - mynetworks
+      - "0.0.0.0/0"
+      - relay
+      - main.cf
+      - smtpd_relay_restrictions
+    require: any
+remediation: >
+  Restrict 'mynetworks' to the trusted local ranges (e.g. 127.0.0.0/8 [::1]/128)
+  and set 'smtpd_relay_restrictions = permit_mynetworks reject_unauth_destination'.
+  Reload Postfix and confirm the host no longer relays for third parties.
+hunt_commands:
+  - "postconf -n | grep -E 'mynetworks|relay'"
+  - "grep -nE 'mynetworks|relay_restrictions' /etc/postfix/main.cf"
+  - "postconf mynetworks smtpd_relay_restrictions"
+learn: >
+  An open relay accepts and forwards mail for senders and recipients that are
+  both outside the organization. Attackers use it to send spam and spoofed mail
+  that appears to come from your domain. Check the effective config with
+  'postconf -n' and ensure relaying is limited to trusted networks.

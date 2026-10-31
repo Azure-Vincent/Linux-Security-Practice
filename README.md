@@ -57,12 +57,14 @@ beaconhunt/
 ├── catalog/web/*.yaml          # web-server findings
 ├── catalog/db/*.yaml           # database findings
 ├── catalog/smb/*.yaml          # Samba/SMB findings
+├── catalog/mail/*.yaml         # mail-server findings
 ├── catalog/host/*.yaml         # host-level findings (passwd/sudoers/systemd/…)
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
 │   ├── web/                    # hardened Apache+PHP target + declawed plant scripts
 │   ├── db/                     # hardened MariaDB target + declawed SQL plant scripts
 │   ├── smb/                    # hardened Samba target + declawed plant scripts
+│   ├── mail/                   # hardened Postfix+Dovecot target + declawed plant scripts
 │   ├── host/                   # generic Linux host + declawed host-level plant scripts
 │   └── sink/                   # local beacon sink (stands in for C2)
 ├── state/                      # scenarios, round state, scoreboard (git-ignored)
@@ -312,10 +314,10 @@ python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, r
 
 ### Status
 
-All five services are implemented end-to-end (plant → hunt → grade → report →
+Six services are implemented end-to-end (plant → hunt → grade → report →
 scoreboard → learn): SSH, the web server (Apache+PHP), the database (MariaDB),
-SMB (Samba), and a generic Linux host for host-level artifacts — **25 findings
-across all six categories**.
+SMB (Samba), mail (Postfix+Dovecot), and a generic Linux host for host-level
+artifacts — **30 findings across all six categories**.
 
 Targets and how to hunt them:
 
@@ -325,6 +327,7 @@ Targets and how to hunt them:
 | web  | `127.0.0.1:8080` | browser, or `docker compose -p beaconhunt exec web bash` (root) |
 | db   | `127.0.0.1:3306` | `docker compose -p beaconhunt exec db mariadb -uroot -pbeaconhunt-root` |
 | smb  | `127.0.0.1:445`  | `docker compose -p beaconhunt exec smb bash` (root); `testparm -s`, `smbclient -L //127.0.0.1 -N`, `pdbedit -L` |
+| mail | `127.0.0.1:2525` (SMTP), `127.0.0.1:1143` (IMAP) | `docker compose -p beaconhunt exec mail bash` (root); `postconf -n`, `cat /etc/aliases`, `ls -la /home/*/.forward` |
 | host | `127.0.0.1:2200` | `ssh defender@127.0.0.1 -p 2200` (sudo), or `docker compose -p beaconhunt exec host bash` |
 
 Host-level hunting: `awk -F: '($3==0)' /etc/passwd` (UID-0 accounts),

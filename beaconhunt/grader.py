@@ -103,9 +103,13 @@ def _normalize_path(text: str) -> str:
     text = text.strip().strip("\"'")
     if "/" not in text:
         return text
-    # Keep only the path-looking token (first whitespace-delimited piece
-    # that contains a slash), then normalize it.
-    token = next((t for t in text.split() if "/" in t), text)
+    # Keep only the path-looking token. Prefer an absolute path (starts with
+    # "/") so evidence like "open relay 0.0.0.0/0 in /etc/postfix/main.cf"
+    # picks the file, not the CIDR; otherwise fall back to the first slash token.
+    toks = text.split()
+    token = next((t for t in toks if t.startswith("/")), None)
+    if token is None:
+        token = next((t for t in toks if "/" in t), text)
     token = token.split(":", 1)[0]  # drop ":line" suffixes like file:3
     norm = posixpath.normpath(token)
     return norm.rstrip("/") or "/"
