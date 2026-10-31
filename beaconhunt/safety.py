@@ -66,7 +66,7 @@ def _is_managed_container(host: str) -> bool:
     if host.startswith(f"{COMPOSE_PROJECT}-") or host.startswith(f"{COMPOSE_PROJECT}_"):
         return True
     # Short service aliases used on the internal compose network.
-    return host in {"ssh", "web", "db", "smb", "mail", "ftp", "host", "sink"}
+    return host in {"ssh", "web", "db", "smb", "mail", "ftp", "dns", "host", "sink"}
 
 
 def classify_target(target: str) -> ScopeDecision:

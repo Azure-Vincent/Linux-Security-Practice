@@ -1,0 +1,41 @@
+id: dns-rogue-record
+name: "Rogue/hijacked DNS record"
+service: dns
+category: backdoor
+difficulty: medium
+points: 120
+description: >
+  A rogue A record ('vpn.acme.local') was added to the zone, pointing an
+  internal hostname at an attacker-controlled IP so clients are silently
+  redirected (credential capture, MITM).
+install:
+  script: plant/rogue_record.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /etc/bind/db.acme.local
+      match: "beaconhunt-rogue"
+  accept_evidence:
+    paths:
+      - /etc/bind/db.acme.local
+      - /etc/bind
+    keywords:
+      - "rogue record"
+      - "A record"
+      - vpn.acme.local
+      - "10.66.66.66"
+      - zone
+    require: any
+remediation: >
+  Remove the rogue record, bump the zone serial, and reload. Compare the live
+  zone against a known-good baseline and restrict who can edit zone files /
+  perform dynamic updates (TSIG, change control).
+hunt_commands:
+  - "grep -n beaconhunt-rogue /etc/bind/db.acme.local; cat /etc/bind/db.acme.local"
+  - "dig @127.0.0.1 -p 5353 vpn.acme.local +short"
+  - "named-checkzone acme.local /etc/bind/db.acme.local"
+learn: >
+  Editing a zone to point a trusted name at an attacker IP redirects users and
+  services without touching their machines — great for phishing and MITM.
+  Baseline zone files, control who can edit them, and diff the live zone against
+  the baseline.

@@ -1,0 +1,40 @@
+id: dns-open-recursion
+name: "Open recursive resolver"
+service: dns
+category: misconfig
+difficulty: easy
+points: 90
+description: >
+  Recursion is enabled for any client ('recursion yes' + 'allow-recursion
+  { any; }'), turning the server into an open resolver — usable for cache
+  poisoning exposure and DNS amplification DDoS.
+install:
+  script: plant/open_recursion.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/bind/named.conf.options
+      match: "beaconhunt-recursion"
+  accept_evidence:
+    paths:
+      - /etc/bind/named.conf.options
+      - /etc/bind/named.conf
+    keywords:
+      - recursion
+      - allow-recursion
+      - "open resolver"
+      - amplification
+    require: any
+remediation: >
+  Set 'recursion no' on an authoritative server, or restrict 'allow-recursion'
+  to internal clients on a resolver. Separate authoritative and recursive roles.
+  Reload named and verify external recursion is refused.
+hunt_commands:
+  - "grep -nE 'recursion|allow-recursion' /etc/bind/named.conf.options"
+  - "named-checkconf -p | grep -i recursion"
+  - "dig @127.0.0.1 -p 5353 google.com +short   # should NOT resolve"
+learn: >
+  An open resolver answers recursive queries for anyone, enabling DNS
+  amplification attacks (spoofed-source queries that flood a victim) and
+  increasing cache-poisoning exposure. Authoritative servers should not recurse;
+  resolvers should restrict recursion to trusted clients.

@@ -187,6 +187,7 @@ def grade(
     for sub in submissions:
         best_id: str | None = None
         best_strength = "none"
+        best_key: tuple[int, int] = (0, 0)
         for aid, art in planted_arts.items():
             if aid in claimed:
                 continue
@@ -194,11 +195,16 @@ def grade(
             if sub.service and sub.service != art.service:
                 continue
             strength = _match_strength(sub.evidence, art)
-            if strength == "strong":
-                best_id, best_strength = aid, "strong"
-                break
-            if strength == "weak" and best_strength == "none":
-                best_id, best_strength = aid, "weak"
+            if strength == "none":
+                continue
+            # Among candidates, prefer the strongest match, and break ties
+            # toward the finding the evidence also corroborates by keyword — so
+            # when several findings share a path (e.g. /etc/bind), the one the
+            # user actually described wins instead of whichever is first.
+            has_kw = _keyword_hit(sub.evidence, art.accept_evidence)
+            key = (2 if strength == "strong" else 1, 1 if has_kw else 0)
+            if key > best_key:
+                best_key, best_id, best_strength = key, aid, strength
 
         if best_id is None:
             result.scored.append(
