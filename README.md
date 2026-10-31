@@ -60,6 +60,7 @@ beaconhunt/
 ├── catalog/mail/*.yaml         # mail-server findings
 ├── catalog/ftp/*.yaml          # FTP findings
 ├── catalog/dns/*.yaml          # DNS findings
+├── catalog/redis/*.yaml        # Redis findings
 ├── catalog/host/*.yaml         # host-level findings (passwd/sudoers/systemd/…)
 ├── services/
 │   ├── ssh/                    # hardened SSH target + declawed plant scripts
@@ -69,6 +70,7 @@ beaconhunt/
 │   ├── mail/                   # hardened Postfix+Dovecot target + declawed plant scripts
 │   ├── ftp/                    # hardened vsftpd target + declawed plant scripts
 │   ├── dns/                    # hardened BIND9 target + declawed plant scripts
+│   ├── redis/                  # hardened Redis target + declawed plant scripts
 │   ├── host/                   # generic Linux host + declawed host-level plant scripts
 │   └── sink/                   # local beacon sink (stands in for C2)
 ├── state/                      # scenarios, round state, scoreboard (git-ignored)
@@ -318,10 +320,10 @@ python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, r
 
 ### Status
 
-Eight services are implemented end-to-end (plant → hunt → grade → report →
+Nine services are implemented end-to-end (plant → hunt → grade → report →
 scoreboard → learn): SSH, the web server (Apache+PHP), the database (MariaDB),
-SMB (Samba), mail (Postfix+Dovecot), FTP (vsftpd), DNS (BIND9), and a generic
-Linux host for host-level artifacts — **40 findings across all six
+SMB (Samba), mail (Postfix+Dovecot), FTP (vsftpd), DNS (BIND9), Redis, and a
+generic Linux host for host-level artifacts — **45 findings across all six
 categories**.
 
 Targets and how to hunt them:
@@ -335,6 +337,7 @@ Targets and how to hunt them:
 | mail | `127.0.0.1:2525` (SMTP), `127.0.0.1:1143` (IMAP) | `docker compose -p beaconhunt exec mail bash` (root); `postconf -n`, `cat /etc/aliases`, `ls -la /home/*/.forward` |
 | ftp  | `127.0.0.1:2121` | `docker compose -p beaconhunt exec ftp bash` (root); `grep -nE 'anon|chroot|write' /etc/vsftpd.conf`, `ls -la /srv/ftp` |
 | dns  | `127.0.0.1:5353` (udp/tcp) | `docker compose -p beaconhunt exec dns bash` (root); `named-checkconf -p`, `cat /etc/bind/db.acme.local`, `dig @127.0.0.1 -p 5353 acme.local AXFR` |
+| redis | `127.0.0.1:6379` | `docker compose -p beaconhunt exec redis bash` (root); `grep -nE 'bind|protected-mode|requirepass' /etc/redis/redis.conf`, `redis-cli -a beaconhunt-redis --no-auth-warning --scan` |
 | host | `127.0.0.1:2200` | `ssh defender@127.0.0.1 -p 2200` (sudo), or `docker compose -p beaconhunt exec host bash` |
 
 Host-level hunting: `awk -F: '($3==0)' /etc/passwd` (UID-0 accounts),
