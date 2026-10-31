@@ -292,6 +292,30 @@ beaconhunt reveal                                 # full answer key (give-up / s
 beaconhunt scoreboard                             # track improvement across rounds
 ```
 
+## Verify the range is correctly planted
+
+After `deploy`, confirm every planted finding is actually live. `verify` turns
+each finding's detection signatures into a shell check and runs it **inside the
+relevant container** (`docker compose exec`) — a range self-test and an
+integration test of the images + plant scripts:
+
+```bash
+beaconhunt verify
+```
+
+```
+  BeaconHunt — live verification
+    [✓] PASS ssh/ssh-authorized-keys-backdoor
+    [✓] PASS db/db-rogue-admin-user
+    [✗] FAIL web/web-php-webshell
+              a planted signature is not present in the container
+  12 live · 1 missing · 0 unchecked (of 13)
+```
+
+Each signature resolves to **present** (live), **absent** (plant missing/broken
+→ the finding is marked FAIL), or **skip** (couldn't check — range down or tool
+absent). `verify` exits non-zero if anything is missing, so it works in CI.
+
 ## Reset / teardown
 
 ```bash
@@ -305,7 +329,7 @@ so the next `deploy` rebuilds a clean range.
 ## Tests
 
 ```bash
-python3 -m pytest        # 18 offline tests: schema, safety, seeding, grading, report
+python3 -m pytest        # offline tests: schema, safety, seeding, grading, report, verify
 ```
 
 ## Extending
