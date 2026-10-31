@@ -76,6 +76,16 @@ services:
     depends_on: [sink]
     restart: unless-stopped
 
+  dns:
+    build: ./services/dns
+    container_name: beaconhunt-dns
+    networks: [range, edge]     # range: reach the sink · edge: publish the ports
+    ports:
+      - "127.0.0.1:5353:53/udp" # loopback only — not exposed to the LAN
+      - "127.0.0.1:5353:53/tcp"
+    depends_on: [sink]
+    restart: unless-stopped
+
   host:
     build: ./services/host
     container_name: beaconhunt-host

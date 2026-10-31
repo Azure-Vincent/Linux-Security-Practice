@@ -202,6 +202,32 @@ def test_mail_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_dns_service_catalog(catalog):
+    assert "dns" in catalog.services
+    dns = catalog.filter(service="dns")
+    assert len(dns) >= 5
+    cats = {a.category for a in dns}
+    assert {"misconfig", "backdoor", "weak-cred", "beacon"} <= cats
+
+
+def test_dns_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=8, count=5, services=["dns"])
+    subs = [Submission(type="backdoor", service="dns",
+                       evidence="rogue record in /etc/bind/db.acme.local")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "dns-rogue-record"
+    assert result.scored[0].strength == "strong"
+
+
+def test_matcher_prefers_keyword_corroborated(catalog):
+    # Two findings share /etc/bind; the evidence's keyword should disambiguate.
+    scenario = generate_scenario(catalog, seed=8, count=5, services=["dns"])
+    subs = [Submission(type="misconfig", service="dns",
+                       evidence="allow-transfer any in /etc/bind/named.conf.options")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "dns-zone-transfer-any"
+
+
 def test_ftp_service_catalog(catalog):
     assert "ftp" in catalog.services
     ftp = catalog.filter(service="ftp")

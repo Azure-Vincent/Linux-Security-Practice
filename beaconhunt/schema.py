@@ -44,7 +44,7 @@ from typing import Any
 
 import yaml
 
-KNOWN_SERVICES = {"ssh", "web", "db", "smb", "mail", "ftp", "host"}
+KNOWN_SERVICES = {"ssh", "web", "db", "smb", "mail", "ftp", "dns", "host"}
 KNOWN_CATEGORIES = {
     "backdoor", "beacon", "persistence", "misconfig", "weak-cred", "privesc",
 }

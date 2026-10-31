@@ -1,0 +1,40 @@
+id: dns-weak-rndc-key
+name: "Weak/known TSIG key for dynamic updates"
+service: dns
+category: weak-cred
+difficulty: medium
+points: 100
+description: >
+  A TSIG key file (/etc/bind/ddns.key) contains a weak, publicly-known secret.
+  Anyone who knows it can make authenticated dynamic updates — adding or
+  rewriting records at will.
+install:
+  script: plant/weak_rndc_key.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /etc/bind/ddns.key
+      match: "beaconhunt-weakkey"
+  accept_evidence:
+    paths:
+      - /etc/bind/ddns.key
+      - /etc/bind
+    keywords:
+      - TSIG
+      - "ddns-key"
+      - rndc
+      - "weak key"
+      - secret
+    require: any
+remediation: >
+  Remove or rotate the key with a strong, randomly-generated secret
+  (tsig-keygen), restrict file permissions, and limit which keys may update
+  which zones ('update-policy'). Never ship a default/known key.
+hunt_commands:
+  - "ls -la /etc/bind/*.key; cat /etc/bind/ddns.key"
+  - "grep -R 'secret' /etc/bind"
+  - "named-checkconf -p | grep -i key"
+learn: >
+  TSIG keys authenticate dynamic DNS updates and zone transfers. A weak or
+  shared/known key lets an attacker rewrite records as if authorized. Keys must
+  be strong, unique, access-controlled, and scoped to specific zones.

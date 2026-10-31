@@ -1,0 +1,38 @@
+id: dns-zone-transfer-any
+name: "Zone transfer (AXFR) allowed from anyone"
+service: dns
+category: misconfig
+difficulty: medium
+points: 110
+description: >
+  named.conf sets 'allow-transfer { any; }', so anyone can pull the entire zone
+  via AXFR — handing an attacker a full map of internal hostnames and IPs.
+install:
+  script: plant/zone_transfer_any.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/bind/named.conf.options
+      match: "beaconhunt-axfr"
+  accept_evidence:
+    paths:
+      - /etc/bind/named.conf.options
+      - /etc/bind/named.conf
+    keywords:
+      - allow-transfer
+      - AXFR
+      - "zone transfer"
+      - named.conf
+    require: any
+remediation: >
+  Restrict transfers to known secondaries ('allow-transfer { <secondary-ips>; }'
+  or 'none'), ideally authenticated with TSIG. Reload named and confirm AXFR
+  from an untrusted client is refused.
+hunt_commands:
+  - "grep -n allow-transfer /etc/bind/named.conf.options"
+  - "named-checkconf -p | grep -i transfer"
+  - "dig @127.0.0.1 -p 5353 acme.local AXFR   # from the host"
+learn: >
+  A zone transfer (AXFR) dumps every record in a zone. If it's open to anyone,
+  an attacker enumerates your entire internal namespace in one query. Restrict
+  allow-transfer to known secondaries and authenticate with TSIG.

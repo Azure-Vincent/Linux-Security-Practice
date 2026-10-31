@@ -1,0 +1,9 @@
+// BeaconHunt baseline BIND options — hardened. Planted findings loosen these.
+options {
+    directory "/var/cache/bind";
+    recursion no;
+    allow-transfer { none; };
+    dnssec-validation auto;
+    listen-on { any; };
+    listen-on-v6 { none; };
+};

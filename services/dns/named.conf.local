@@ -1,0 +1,5 @@
+// BeaconHunt baseline zones.
+zone "acme.local" {
+    type master;
+    file "/etc/bind/db.acme.local";
+};
