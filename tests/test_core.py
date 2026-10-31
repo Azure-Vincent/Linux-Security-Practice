@@ -279,6 +279,33 @@ def test_host_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_verify_builds_a_check_for_every_signature(catalog):
+    from beaconhunt.verify import check_snippet
+    for art in catalog:
+        for sig in art.signatures:
+            assert check_snippet(sig) is not None, f"{art.id}/{sig.type}"
+
+
+def test_verify_snippet_semantics(tmp_path):
+    import subprocess
+    from beaconhunt.catalog import load_catalog
+    from beaconhunt.verify import check_snippet
+    cat = load_catalog(CATALOG_DIR)
+    sig = cat.get("ssh-authorized-keys-backdoor").signatures[0]
+    snip = check_snippet(sig)
+    present = tmp_path / "present"
+    absent = tmp_path / "absent"
+    present.write_text("ssh-ed25519 AAAA beaconhunt-trainingkey\n")
+    absent.write_text("ssh-ed25519 AAAA legit\n")
+
+    def run(p):
+        s = snip.replace(sig.path, str(p))
+        return subprocess.run(["sh", "-c", s], capture_output=True, text=True).stdout.strip()
+
+    assert run(present) == "BH_PRESENT"
+    assert run(absent) == "BH_ABSENT"
+
+
 def test_report_renders(catalog):
     scenario = generate_scenario(catalog, seed=1337, count=3, services=["ssh"])
     result = grade(scenario, catalog, [])

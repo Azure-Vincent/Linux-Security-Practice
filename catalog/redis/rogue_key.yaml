@@ -13,7 +13,7 @@ install:
 detection:
   signatures:
     - type: command
-      command: "redis-cli --scan --pattern 'beaconhunt:*'"
+      command: "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning --scan --pattern 'beaconhunt:*'"
       match: "beaconhunt:backdoor"
   accept_evidence:
     keywords:

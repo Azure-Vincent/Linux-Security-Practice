@@ -222,6 +222,18 @@ def cmd_scoreboard(args) -> int:
     return 0
 
 
+def cmd_verify(args) -> int:
+    from . import verify as verifymod
+    seed = _resolve_seed(args)
+    cat = load_catalog(args.catalog)
+    scenario = load_scenario(seed, args.state_dir)
+    safety.require_in_scope("localhost")
+    results = verifymod.verify(scenario, cat)
+    print(verifymod.render(results))
+    # Non-zero exit if any planted signature is missing (CI-friendly).
+    return 1 if any(r.verdict == "FAIL" for r in results) else 0
+
+
 def cmd_web(args) -> int:
     from . import webui
     return webui.serve(
@@ -299,6 +311,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("reveal", help="reveal the answer key (give up / learn)")
     sp.add_argument("--seed", type=int)
     sp.set_defaults(func=cmd_reveal)
+
+    sp = sub.add_parser("verify", help="confirm planted signatures are live in the range")
+    sp.add_argument("--seed", type=int)
+    sp.set_defaults(func=cmd_verify)
 
     sp = sub.add_parser("learn", help="explainers and hunt walkthrough")
     sp.add_argument("artifact_id", nargs="?")
