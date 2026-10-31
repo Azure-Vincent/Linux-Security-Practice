@@ -1,0 +1,37 @@
+id: ftp-weak-cred
+name: "FTP account with a weak password"
+service: ftp
+category: weak-cred
+difficulty: easy
+points: 90
+description: >
+  An FTP account 'ftpuser' was created with a weak, guessable password. FTP
+  sends credentials in cleartext, so a weak password here is easily brute-forced
+  or sniffed.
+install:
+  script: plant/weak_cred.sh
+detection:
+  signatures:
+    - type: user
+      path: /etc/passwd
+      match: "ftpuser"
+  accept_evidence:
+    users: ["ftpuser"]
+    keywords:
+      - ftpuser
+      - "weak password"
+      - "ftp account"
+      - cleartext
+    require: keyword
+remediation: >
+  Disable or remove the account and enforce strong passwords for all FTP users.
+  Better: replace plaintext FTP with FTPS/SFTP so credentials aren't sent in the
+  clear. Rate-limit and monitor failed logins.
+hunt_commands:
+  - "getent passwd ftpuser"
+  - "awk -F: '$6 ~ /\\/srv\\/ftp/ {print $1}' /etc/passwd"
+  - "grep -R userlist /etc/vsftpd.conf; cat /etc/vsftpd.user_list 2>/dev/null"
+learn: >
+  FTP transmits credentials and data in cleartext, so weak FTP passwords are
+  doubly dangerous — guessable and sniffable. Audit FTP accounts for weak or
+  shared passwords and prefer SFTP/FTPS.

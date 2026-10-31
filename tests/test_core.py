@@ -202,6 +202,23 @@ def test_mail_grade_true_positive(catalog):
     assert result.scored[0].strength == "strong"
 
 
+def test_ftp_service_catalog(catalog):
+    assert "ftp" in catalog.services
+    ftp = catalog.filter(service="ftp")
+    assert len(ftp) >= 5
+    cats = {a.category for a in ftp}
+    assert {"misconfig", "weak-cred", "backdoor", "privesc", "beacon"} <= cats
+
+
+def test_ftp_grade_true_positive(catalog):
+    scenario = generate_scenario(catalog, seed=3, count=5, services=["ftp"])
+    subs = [Submission(type="backdoor", service="ftp",
+                       evidence="/srv/ftp/upload/update.sh")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "ftp-planted-backdoor"
+    assert result.scored[0].strength == "strong"
+
+
 def test_host_service_catalog(catalog):
     assert "host" in catalog.services
     host = catalog.filter(service="host")

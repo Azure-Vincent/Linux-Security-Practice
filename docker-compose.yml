@@ -67,6 +67,15 @@ services:
     depends_on: [sink]
     restart: unless-stopped
 
+  ftp:
+    build: ./services/ftp
+    container_name: beaconhunt-ftp
+    networks: [range, edge]     # range: reach the sink · edge: publish the port
+    ports:
+      - "127.0.0.1:2121:21"     # loopback only — not exposed to the LAN
+    depends_on: [sink]
+    restart: unless-stopped
+
   host:
     build: ./services/host
     container_name: beaconhunt-host

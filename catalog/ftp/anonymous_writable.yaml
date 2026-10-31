@@ -1,0 +1,41 @@
+id: ftp-anonymous-writable
+name: "Anonymous FTP with writable upload"
+service: ftp
+category: misconfig
+difficulty: easy
+points: 90
+description: >
+  vsftpd was reconfigured to allow anonymous login AND anonymous upload to a
+  world-writable directory. Anyone can log in with no credentials and drop
+  files on the server.
+install:
+  script: plant/anonymous_writable.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/vsftpd.conf
+      match: "beaconhunt-ftp-anon"
+  accept_evidence:
+    paths:
+      - /etc/vsftpd.conf
+      - /srv/ftp/upload
+    keywords:
+      - anonymous_enable
+      - anon_upload_enable
+      - "anonymous"
+      - vsftpd.conf
+      - "world-writable"
+    require: any
+remediation: >
+  Set 'anonymous_enable=NO' (and remove anon_upload/mkdir settings), disable
+  'write_enable' unless needed, and remove the world-writable upload directory.
+  Reload vsftpd and confirm anonymous login is refused.
+hunt_commands:
+  - "grep -nE 'anon|write_enable' /etc/vsftpd.conf"
+  - "ls -la /srv/ftp /srv/ftp/upload"
+  - "ftp -inv 127.0.0.1 2121   # try: user anonymous"
+learn: >
+  Anonymous, writable FTP lets an attacker upload tooling or web shells with no
+  authentication — and if that directory is served elsewhere (e.g. by a web
+  server), it becomes code execution. Check vsftpd.conf for anonymous/upload
+  settings and audit share permissions.

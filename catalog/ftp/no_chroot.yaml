@@ -1,0 +1,38 @@
+id: ftp-no-chroot
+name: "chroot disabled — users browse the whole filesystem"
+service: ftp
+category: privesc
+difficulty: medium
+points: 110
+description: >
+  vsftpd has 'chroot_local_user=NO', so authenticated local users are not
+  confined to their home directory and can traverse and download from the
+  entire server filesystem (e.g. /etc/passwd, keys, configs).
+install:
+  script: plant/no_chroot.sh
+detection:
+  signatures:
+    - type: config
+      path: /etc/vsftpd.conf
+      match: "beaconhunt-nochroot"
+  accept_evidence:
+    paths:
+      - /etc/vsftpd.conf
+    keywords:
+      - chroot_local_user
+      - chroot
+      - "no chroot"
+      - "filesystem traversal"
+      - vsftpd.conf
+    require: any
+remediation: >
+  Set 'chroot_local_user=YES' so users are jailed to their home directory (add
+  'allow_writeable_chroot=YES' only if you truly need a writable home). Reload
+  vsftpd and verify a user can no longer cd above their home.
+hunt_commands:
+  - "grep -n chroot /etc/vsftpd.conf"
+  - "grep -nE 'chroot_local_user|chroot_list' /etc/vsftpd.conf"
+learn: >
+  Without a chroot jail, an FTP login becomes read access to the whole
+  filesystem — an attacker with any valid account can pull /etc/passwd, SSH
+  keys, app secrets, and more. Ensure chroot is enabled for local users.

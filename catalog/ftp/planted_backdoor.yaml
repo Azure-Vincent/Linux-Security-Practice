@@ -1,0 +1,40 @@
+id: ftp-planted-backdoor
+name: "Malicious script uploaded to the FTP area"
+service: ftp
+category: backdoor
+difficulty: medium
+points: 120
+description: >
+  A script (update.sh) was dropped into the writable FTP upload directory. It
+  has the shape of a staged payload; this training copy is neutered but matches
+  what a hunter looks for in an anonymous drop zone.
+install:
+  script: plant/planted_backdoor.sh
+detection:
+  signatures:
+    - type: file_line
+      path: /srv/ftp/upload/update.sh
+      match: "beaconhunt-ftp-payload"
+  accept_evidence:
+    paths:
+      - /srv/ftp/upload/update.sh
+      - /srv/ftp/upload
+      - /srv/ftp
+    keywords:
+      - update.sh
+      - payload
+      - "/srv/ftp"
+      - dropzone
+    require: any
+remediation: >
+  Delete the uploaded script and review who had write access and when it
+  appeared. Remove anonymous/write access to the FTP area and ensure uploaded
+  files cannot be executed by any other service.
+hunt_commands:
+  - "ls -la /srv/ftp/upload"
+  - "find /srv/ftp -type f -newermt '-7 days' -ls"
+  - "grep -RilE 'curl|wget|bash -i|/dev/tcp' /srv/ftp"
+learn: >
+  Writable FTP areas become malware drop zones. An attacker uploads a script,
+  then executes it via another service or a scheduled task. Baseline the FTP
+  tree and alert on new executables, especially in anonymous-writable paths.
