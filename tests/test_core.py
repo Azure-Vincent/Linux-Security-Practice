@@ -271,11 +271,22 @@ def test_host_service_catalog(catalog):
 
 
 def test_host_grade_true_positive(catalog):
-    scenario = generate_scenario(catalog, seed=9, count=5, services=["host"])
+    # count large enough to plant every host finding (keyword tie-break then
+    # resolves which of the two /etc/passwd findings this evidence describes).
+    scenario = generate_scenario(catalog, seed=9, count=20, services=["host"])
     subs = [Submission(type="backdoor", service="host",
-                       evidence="toor uid 0 in /etc/passwd")]
+                       evidence="toor uid 0 (second root) in /etc/passwd")]
     result = grade(scenario, catalog, subs)
     assert result.scored[0].matched_artifact_id == "host-uid0-account"
+    assert result.scored[0].strength == "strong"
+
+
+def test_host_rogue_shadow_account_grades(catalog):
+    scenario = generate_scenario(catalog, seed=9, count=20, services=["host"])
+    subs = [Submission(type="backdoor", service="host",
+                       evidence="unexpected account iris.wood in /etc/passwd")]
+    result = grade(scenario, catalog, subs)
+    assert result.scored[0].matched_artifact_id == "host-rogue-shadow-account"
     assert result.scored[0].strength == "strong"
 
 

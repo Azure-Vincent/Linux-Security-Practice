@@ -1,0 +1,57 @@
+id: host-rogue-shadow-account
+name: "Rogue login account added out-of-band"
+service: host
+category: backdoor
+difficulty: hard
+points: 150
+description: >
+  A regular, login-capable account ('iris.wood') was added to /etc/passwd and
+  /etc/shadow outside the box's normal provisioning — the kind of quiet backdoor
+  account a defender catches not from the entry itself but from how it *deviates
+  from the baseline*: an odd UID, the most recent last-change date, and a
+  password-hash algorithm that doesn't match the rest of the user population.
+
+install:
+  script: plant/rogue_shadow_account.sh
+
+detection:
+  signatures:
+    - type: user
+      path: /etc/passwd
+      match: "beaconhunt-rogue-acct"
+  accept_evidence:
+    paths:
+      - /etc/passwd
+      - /etc/shadow
+    users: ["iris.wood"]
+    keywords:
+      - iris.wood
+      - "rogue account"
+      - "unexpected account"
+      - "rogue login account"
+      - "baseline deviation"
+    require: any
+
+remediation: >
+  Lock the account immediately (`usermod -L iris.wood`, or remove it with
+  `userdel -r` once preserved for IR), then determine how it was created and
+  whether it has sudo rights, group memberships, SSH keys, or cron. Diff
+  /etc/passwd and /etc/shadow against a known-good baseline and alert on any new
+  login-capable account. Rotate credentials if there was any exposure.
+
+hunt_commands:
+  - "awk -F: '$3>=1000 && $3<65534 {print $3, $1}' /etc/passwd | sort -n   # human accounts by UID"
+  - "sudo cut -d: -f1,3 /etc/shadow | sort -t: -k2 -n | tail   # newest password changes (outliers)"
+  - "sudo awk -F: 'length($2)>1 {split($2,a,\"$\"); print a[2], $1}' /etc/shadow | sort | uniq -c   # hash algos in use"
+  - "cut -d: -f1,5 /etc/passwd | grep -iE 'rogue|temp|test'   # GECOS oddities"
+
+learn: >
+  Attacker-added accounts rarely look wrong in isolation — the giveaway is that
+  they break the pattern of the legitimately-provisioned population. Bulk-created
+  users share a hash algorithm (e.g. all SHA-512crypt, '$6$') and a last-change
+  date; an account created later and by a different path shows a different hash
+  type (e.g. yescrypt, '$y$') and a newer date, and often an out-of-sequence UID.
+  Hunt by diffing /etc/passwd and /etc/shadow against a baseline, sorting by UID
+  and last-change date, and checking that the hash algorithms are consistent.
+  A login-capable account (non-'*', non-'!' field 2) that nobody can account for
+  is a backdoor until proven otherwise.

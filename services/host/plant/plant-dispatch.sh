@@ -9,6 +9,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 plant_one() {
   case "$1" in
     host-uid0-account)        "$HERE/uid0_account.sh" ;;
+    host-rogue-shadow-account) "$HERE/rogue_shadow_account.sh" ;;
     host-sudoers-nopasswd)    "$HERE/sudoers_nopasswd.sh" ;;
     host-rogue-systemd-timer) "$HERE/systemd_timer.sh" ;;
     host-history-tamper)      "$HERE/history_tamper.sh" ;;

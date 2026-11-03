@@ -347,7 +347,7 @@ python3 -m pytest        # offline tests: schema, safety, seeding, grading, repo
 Nine services are implemented end-to-end (plant → hunt → grade → report →
 scoreboard → learn): SSH, the web server (Apache+PHP), the database (MariaDB),
 SMB (Samba), mail (Postfix+Dovecot), FTP (vsftpd), DNS (BIND9), Redis, and a
-generic Linux host for host-level artifacts — **45 findings across all six
+generic Linux host for host-level artifacts — **46 findings across all six
 categories**.
 
 Targets and how to hunt them:
