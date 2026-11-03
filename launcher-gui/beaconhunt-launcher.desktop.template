@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BeaconHunt Launcher
+Comment=Launch a BeaconHunt training range — no terminal needed
+# Replace __INSTALL_DIR__ with the absolute path to this launcher-gui folder,
+# or just run install-linux.sh which fills this in for you.
+Exec=__INSTALL_DIR__/run-launcher.sh
+Icon=security-high
+Terminal=false
+Categories=Security;Education;System;
