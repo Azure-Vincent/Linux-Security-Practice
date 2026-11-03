@@ -32,19 +32,37 @@ The launcher adds no new requirements beyond what the app itself needs:
 
 No admin rights required.
 
-## Install & run
-
 The launcher must sit **inside (or next to) the BeaconHunt app folder** so it
-can find it. This folder already is. Then:
+can find it. This folder already is.
+
+### Windows
 
 - **Double-click `BeaconHunt Launcher.vbs`** — opens the GUI with no console
-  window (uses `pythonw`). This is the recommended, build-free way.
-- To get a desktop shortcut: right-click `BeaconHunt Launcher.vbs` →
-  *Send to* → *Desktop (create shortcut)*, then rename/icon it as you like.
-- **Optional standalone `.exe`:** run `build_launcher_exe.bat` on Windows →
-  produces `dist\BeaconHunt Launcher.exe` (windowless). Keep it in/next to the
-  app folder. Note: the `.exe` still needs Python + Docker available, because it
-  runs the app's own CLI (see *Limitations*).
+  window (uses `pythonw`). Recommended, build-free.
+- Desktop shortcut: right-click `BeaconHunt Launcher.vbs` → *Send to* →
+  *Desktop (create shortcut)*.
+- **Optional standalone `.exe`:** run `build_launcher_exe.bat` →
+  `dist\BeaconHunt Launcher.exe` (windowless). Still needs Python + Docker (it
+  runs the app's CLI — see *Limitations*).
+
+### Linux / macOS
+
+1. Install Tk (needed by the GUI) if it isn't already:
+   - Debian/Ubuntu: `sudo apt install python3-tk`
+   - Fedora: `sudo dnf install python3-tkinter`
+   - Arch: `sudo pacman -S tk`
+   - macOS (Homebrew Python already includes Tk; otherwise `brew install python-tk`)
+2. **Add a double-click launcher:** run `./install-linux.sh` — it installs a
+   desktop entry (`Terminal=false`) into your applications menu and onto your
+   Desktop. Then launch **BeaconHunt Launcher** from the menu/Desktop — no
+   terminal appears.
+3. Or run it directly any time: `./run-launcher.sh` (checks prerequisites and
+   opens the GUI). `run-launcher.sh` is also what the desktop entry calls.
+
+On Linux/macOS there's no "hidden console" to worry about: a GUI started from a
+desktop entry doesn't open a terminal, and the launcher's background CLI calls
+don't spawn one either. If Tk is missing, `run-launcher.sh` shows a graphical
+message (zenity/kdialog/notify-send) telling you exactly what to install.
 
 First launch builds the container images and can take a few minutes; later
 launches are fast.
@@ -55,7 +73,7 @@ Per-launch logs (full stdout/stderr of the underlying commands) and the
 launcher's own config live under:
 
 - **Windows:** `%APPDATA%\BeaconHuntLauncher\` (logs in `logs\`)
-- **macOS/Linux:** `~/.config/BeaconHuntLauncher/`
+- **macOS/Linux:** `~/.config/BeaconHuntLauncher/` (or `$XDG_CONFIG_HOME/BeaconHuntLauncher/`)
 
 The error panel's **View details** opens the current log; **Copy log** copies it
 for support.

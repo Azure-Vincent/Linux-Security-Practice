@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -61,3 +62,18 @@ def test_service_access_covers_all_services():
     root = be.find_app_root()
     for svc in be.discover_services(root):
         assert svc in be.SERVICE_ACCESS, f"no access hint for {svc}"
+
+
+def test_linux_launcher_scripts_are_valid():
+    import subprocess
+    for name in ("run-launcher.sh", "install-linux.sh"):
+        p = HERE / name
+        assert p.exists() and os.access(p, os.X_OK), f"{name} missing or not executable"
+        rc = subprocess.run(["bash", "-n", str(p)]).returncode
+        assert rc == 0, f"{name} has a syntax error"
+
+
+def test_desktop_entry_is_no_terminal():
+    tmpl = (HERE / "beaconhunt-launcher.desktop.template").read_text()
+    assert "Terminal=false" in tmpl
+    assert "Exec=" in tmpl
